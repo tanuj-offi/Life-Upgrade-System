@@ -27,6 +27,11 @@ int main(){
                 cout<<"Enter task ID: "; cin>>id;
                 cout<<"Enter task name: "; cin.ignore(); getline(cin, name);
                 cout<<"Enter task XP: "; cin>>xp;
+
+                if(list.containsTask(id)){
+                    cout<<"Task ID already exists!"<<endl;
+                    break;
+                }
                 
                 Task task(id, name, xp);
                 list.addTask(task);

@@ -6,6 +6,15 @@ TaskList::TaskList(){
     head = nullptr;
 }
 
+TaskList::~TaskList(){
+    Node* current = head;
+    while(current != nullptr){
+        Node* temp = current;
+        current = current->next;
+        delete temp;
+    }
+}
+
 void TaskList::addTask(Task task){
     Node* newNode = new Node{task, nullptr};
 
@@ -22,11 +31,11 @@ void TaskList::addTask(Task task){
 }
 
 void TaskList::displayTasks(){
-    Node* temp = head;
     if(head == nullptr){
         cout<<"No tasks available!"<<endl;
         return;
     }
+    Node* temp = head;
     while(temp != nullptr){
         cout<<temp->task.get_id()<<" "<<temp->task.get_name()<<" "<<temp->task.get_xp()<<" ";
         cout<<(temp->task.is_completed() ? "Completed" : "Pending")<<endl;

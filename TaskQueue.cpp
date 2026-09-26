@@ -7,6 +7,15 @@ TaskQueue::TaskQueue(){
     rear = nullptr;
 }
 
+TaskQueue::~TaskQueue(){
+    Node* current = front;
+    while(current != nullptr){
+        Node* temp = current;
+        current = current->next;
+        delete temp;
+    }
+}
+
 void TaskQueue::enqueue(int taskId){
     Node* newNode = new Node{taskId, nullptr};
 

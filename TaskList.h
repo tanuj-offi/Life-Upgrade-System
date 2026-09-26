@@ -12,6 +12,7 @@ class TaskList{
         Node* head;
     public:
         TaskList();
+        ~TaskList();
         void addTask(Task task);
         void displayTasks();
         void deleteTask(int id);

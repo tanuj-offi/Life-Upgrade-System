@@ -11,6 +11,7 @@ class TaskQueue{
         Node* rear;
     public:
         TaskQueue();
+        ~TaskQueue();
         void enqueue(int taskId);
         bool dequeue(int& removedTaskId);
         bool peek(int& taskId);
