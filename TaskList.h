@@ -17,6 +17,8 @@ class TaskList{
         void deleteTask(int id);
         void markTaskCompleted(int id);
         void editTask(int id, string newName, int newXP);
+        bool getTask(int id, Task& task);
+        bool containsTask(int id);
 };
 
 #endif 

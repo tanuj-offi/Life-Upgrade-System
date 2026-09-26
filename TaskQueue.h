@@ -1,20 +1,22 @@
 #ifndef TASKQUEUE_H
 #define TASKQUEUE_H
 
-#include "Task.h"
 class TaskQueue{
     private:
         struct Node{
-            Task task;
+            int taskId;
             Node* next;
         };
         Node* front;
         Node* rear;
     public:
         TaskQueue();
-        void enqueue(Task task);
-        void dequeue();
+        void enqueue(int taskId);
+        bool dequeue(int& removedTaskId);
+        bool peek(int& taskId);
         void displayQueue();
+        bool contains(int id);
+        bool remove(int id);
         bool isEmpty();
 };
 

@@ -23,6 +23,10 @@ void TaskList::addTask(Task task){
 
 void TaskList::displayTasks(){
     Node* temp = head;
+    if(head == nullptr){
+        cout<<"No tasks available!"<<endl;
+        return;
+    }
     while(temp != nullptr){
         cout<<temp->task.get_id()<<" "<<temp->task.get_name()<<" "<<temp->task.get_xp()<<" ";
         cout<<(temp->task.is_completed() ? "Completed" : "Pending")<<endl;
@@ -76,4 +80,27 @@ void TaskList::editTask(int id, string newName, int newXP){
         current = current->next;
     }
     cout<<"Task not found!"<<endl;
+}
+
+bool TaskList::getTask(int id, Task& task){
+    Node* current = head;
+    while(current != nullptr){
+        if(current->task.get_id() == id){
+            task = current->task;
+            return true;
+        }
+        current = current->next;
+    }
+    return false;
+}
+
+bool TaskList::containsTask(int id){
+    Node* current = head;
+    while(current != nullptr){
+        if(current->task.get_id() == id){
+            return true;
+        }
+        current = current->next;
+    }
+    return false;
 }

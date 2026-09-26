@@ -7,8 +7,8 @@ TaskQueue::TaskQueue(){
     rear = nullptr;
 }
 
-void TaskQueue::enqueue(Task task){
-    Node* newNode = new Node{task, nullptr};
+void TaskQueue::enqueue(int taskId){
+    Node* newNode = new Node{taskId, nullptr};
 
     if(front == nullptr){
         front = newNode;
@@ -20,11 +20,12 @@ void TaskQueue::enqueue(Task task){
     }
 }
 
-void TaskQueue::dequeue(){
+bool TaskQueue::dequeue(int& removedTaskId){
     if(front == nullptr){
         cout<<"Queue is empty!"<<endl;
-        return;
+        return false;
     }
+    removedTaskId = front->taskId;
     Node* temp = front;
     front = front->next;
 
@@ -32,6 +33,15 @@ void TaskQueue::dequeue(){
         rear = nullptr;
     }
     delete temp;
+    return true;
+}
+ 
+bool TaskQueue::peek(int& taskId){
+    if(front == nullptr){
+        return false;
+    }
+    taskId = front->taskId;
+    return true;
 }
 
 void TaskQueue::displayQueue(){
@@ -42,11 +52,45 @@ void TaskQueue::displayQueue(){
     Node* temp = front;
 
     while(temp != nullptr){
-        cout<<temp->task.get_id()<<" "<<temp->task.get_name()<<" ";
-        cout<<temp->task.get_xp()<<endl;
+        cout<<"Task ID: "<<temp->taskId<<endl;
         temp = temp->next;
     }
 }
+
+bool TaskQueue::contains(int id){
+    Node* temp = front;
+    while(temp != nullptr){
+        if(temp->taskId == id){
+            return true;
+        }
+        temp = temp->next;
+    }
+    return false;
+}
+
+bool TaskQueue::remove(int id){
+    Node* current = front;
+    Node* previous = nullptr;
+
+    while(current != nullptr){
+        if(current->taskId == id){
+            if(previous == nullptr){
+                front = current->next;
+            }
+            else{
+                previous->next = current->next;
+            }
+            if(current == rear){
+                rear = previous;
+            }
+            delete current;
+            return true;
+        }
+        previous = current;
+        current = current->next;
+    }
+    return false;
+} 
 
 bool TaskQueue::isEmpty(){
     return front == nullptr;
