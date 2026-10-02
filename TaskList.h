@@ -20,6 +20,7 @@ class TaskList{
         void editTask(int id, string newName, int newXP);
         bool getTask(int id, Task& task);
         bool containsTask(int id);
+        void restoreTask(Task task);
 };
 
 #endif 

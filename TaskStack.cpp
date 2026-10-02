@@ -1,27 +1,39 @@
-#include "Stack.h"
+#include "TaskStack.h"
 
-Stack::Stack(){
+Stack::Stack() {
     top = nullptr;
 }
 
-void Stack::push(Action action){
+Stack::~Stack() {
+    Node* current = top;
+
+    while (current != nullptr) {
+        Node* temp = current;
+        current = current->next;
+        delete temp;
+    }
+}
+
+void Stack::push(Action action) {
     Node* newNode = new Node{action, top};
     top = newNode;
 }
 
-bool Stack::pop(Action &action){
-    if(top == nullptr){
+bool Stack::pop(Action& action) {
+    if (top == nullptr) {
         return false;
     }
 
     Node* temp = top;
+
     action = top->action;
     top = top->next;
+
     delete temp;
 
     return true;
 }
 
-bool Stack::isEmpty(){
+bool Stack::isEmpty() {
     return top == nullptr;
 }

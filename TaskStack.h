@@ -15,9 +15,9 @@ struct Action {
     Task task;
 };
 
-class Stack{
+class Stack {
 private:
-    struct Node{
+    struct Node {
         Action action;
         Node* next;
     };
@@ -26,9 +26,10 @@ private:
 
 public:
     Stack();
+    ~Stack();
 
     void push(Action action);
-    bool pop(Action &action);
+    bool pop(Action& action);
     bool isEmpty();
 };
 
