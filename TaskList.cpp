@@ -116,19 +116,13 @@ bool TaskList::containsTask(int id){
 
 
 void TaskList::restoreTask(Task task){
-
     Node* current = head;
-
     while(current != nullptr){
-
         if(current->task.get_id() == task.get_id()){
-
             current->task = task;
-
             return;
         }
-
         current = current->next;
     }
     addTask(task);
-}
+}  

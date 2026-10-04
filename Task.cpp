@@ -27,6 +27,10 @@ void Task::markCompleted(){
     completed = true;
 }
 
+void Task::unmarkCompleted(){
+    completed = false;
+}
+
 void Task::set_name(string newName){
     name = newName;
 }

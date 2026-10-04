@@ -17,6 +17,7 @@ class Task{
         int get_xp();
         bool is_completed();
         void markCompleted();
+        void unmarkCompleted();
         void set_name(string newName);
         void set_xp(int newXP);
 };

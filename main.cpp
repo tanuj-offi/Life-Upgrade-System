@@ -16,8 +16,8 @@ int main(){
         cout<<"\n~~~~~ LIFE UPGRADE SYSTEM ~~~~~"<<endl;
         cout<<"1. Add Task"<<endl<<"2. Edit Task"<<endl<<"3. Display Task"<<endl;
         cout<<"4. Delete Task"<<endl<<"5. Complete Task"<<endl<<"6. Schedule Task"<<endl;
-        cout<<"7. View Schedule"<<endl<<"8. Process Next Scheduled Task"<<endl;
-        cout<<"9. Undo Last Action"<<endl<<"10. Exit"<<endl;
+        cout<<"7. Unschedule Task"<<endl<<"8. View Schedule"<<endl<<"9. Process Next Scheduled Task"<<endl;
+        cout<<"10. Undo Last Action"<<endl<<"11. Exit"<<endl;
         cout<<"Enter your choice: ";
         cin>>choice;
 
@@ -39,7 +39,7 @@ int main(){
                 Task task(id, name, xp);
                 list.addTask(task);
 
-                Action action{ADD_TASK, task};
+                Action action{ADD_TASK, task, false};
                 undoStack.push(action);
 
                 cout<<"Task added successfully!"<<endl;
@@ -64,7 +64,7 @@ int main(){
 
                 list.editTask(id, newName, newXP);
 
-                Action action{EDIT_TASK, oldTask};
+                Action action{EDIT_TASK, oldTask, queue.contains(id)};
                 undoStack.push(action);
 
                 break;
@@ -87,10 +87,11 @@ int main(){
                     break;
                 }
 
+                bool wasScheduled = queue.contains(id);
                 queue.remove(id);
                 list.deleteTask(id);
 
-                Action action{DELETE_TASK, deletedTask};
+                Action action{DELETE_TASK, deletedTask, wasScheduled};
                 undoStack.push(action);
 
                 break;
@@ -112,10 +113,11 @@ int main(){
                     break;
                 }
 
+                bool wasScheduled = queue.contains(id);
                 list.markTaskCompleted(id);
                 queue.remove(id);
 
-                Action action{COMPLETE_TASK, oldTask};
+                Action action{COMPLETE_TASK, oldTask, wasScheduled};
                 undoStack.push(action);
 
                 break;
@@ -144,11 +146,24 @@ int main(){
             }
             case 7:
             {
+                int taskId;
+                cout<<"Enter Task ID to unschedule: ";
+                cin>>taskId;
+                if(queue.remove(taskId)){
+                    cout<<"Task unscheduled!"<<endl;
+                }
+                else{
+                    cout<<"Task is not scheduled!"<<endl;
+                }
+                break;
+            }
+            case 8:
+            {
                 cout<<"Scheduled Task:"<<endl;
                 queue.displayQueue();
                 break;
             }
-            case 8:
+            case 9:
             {
                 if(queue.isEmpty()){
                     cout<<"No schedules tasks!"<<endl;
@@ -180,10 +195,10 @@ int main(){
                         queue.dequeue(taskId);
                         list.markTaskCompleted(taskId);
 
-                        Action action{COMPLETE_TASK, task};
+                        Action action{COMPLETE_TASK, task, true};
                         undoStack.push(action);
 
-                        cout<<"Task completed and removed from schedule!"<<endl;
+                        cout<<"Removed from schedule!"<<endl;
                         break;
                     }
                     case 2:
@@ -204,7 +219,7 @@ int main(){
                 }
                 break;
             }
-            case 9:
+            case 10:
             {
                 Action action{ADD_TASK, Task(0, "", 0)};
 
@@ -224,6 +239,9 @@ int main(){
                     case DELETE_TASK:
                     {
                         list.restoreTask(action.task);
+                        if(action.wasScheduled){
+                            queue.enqueue(action.task.get_id());
+                        }
                         cout<<"Last Delete action undone!"<<endl;
                         break;
                     }
@@ -236,6 +254,9 @@ int main(){
                     case COMPLETE_TASK:
                     {
                         list.restoreTask(action.task);
+                        if(action.wasScheduled){
+                            queue.enqueue(action.task.get_id());
+                        }
                         cout<<"Last Complete action undone!"<<endl;
                         break;
                     }
@@ -243,7 +264,7 @@ int main(){
 
                 break;
             }
-            case 10:
+            case 11:
             {
                 cout<<"Thank You!"<<endl;
                 cout<<"Exiting...";
@@ -252,7 +273,7 @@ int main(){
             default:
                 cout<<"Invalid Input! Try again..."<<endl;
         }
-    } while(choice != 10);
+    } while(choice != 11);
 
     return 0; 
 }

@@ -13,6 +13,7 @@ enum ActionType {
 struct Action {
     ActionType type;
     Task task;
+    bool wasScheduled;
 };
 
 class Stack {
