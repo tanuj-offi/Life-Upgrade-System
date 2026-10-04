@@ -1,5 +1,5 @@
-#ifndef STACK_H
-#define STACK_H
+#ifndef TASKSTACK_H
+#define TASKSTACK_H
 
 #include "Task.h"
 
