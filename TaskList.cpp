@@ -35,11 +35,39 @@ void TaskList::displayTasks(){
         cout<<"No tasks available!"<<endl;
         return;
     }
-    Node* temp = head;
-    while(temp != nullptr){
-        cout<<temp->task.get_id()<<" "<<temp->task.get_name()<<" "<<temp->task.get_xp()<<" ";
-        cout<<(temp->task.is_completed() ? "Completed" : "Pending")<<endl;
-        temp = temp->next;
+
+    Node* current = head;
+
+    while(current != nullptr){
+        Node* smallest = current;
+        Node* temp = current->next;
+
+        while(temp != nullptr){
+            if(temp->task.get_id() < smallest->task.get_id()){
+                smallest = temp;
+            }
+
+            temp = temp->next;
+        }
+
+        if(smallest != current){
+            Task tempTask = current->task;
+            current->task = smallest->task;
+            smallest->task = tempTask;
+        }
+
+        current = current->next;
+    }
+
+    current = head;
+
+    while(current != nullptr){
+        cout<<current->task.get_id()<<" "
+            <<current->task.get_name()<<" "
+            <<current->task.get_xp()<<" ";
+        cout<<(current->task.is_completed() ? "Completed" : "Pending")<<endl;
+
+        current = current->next;
     }
 }
 
