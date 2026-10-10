@@ -56,7 +56,7 @@ XP/level progression in later phases.
 3.  Compile all `.cpp` files together:
 
 ``` bash
-g++ main.cpp Task.cpp TaskList.cpp -o LifeUpgradeSystem
+g++ main.cpp Task.cpp TaskList.cpp TaskQueue.cpp TaskStack.cpp -o LifeUpgradeSystem
 ```
 
 4.  Run the program:

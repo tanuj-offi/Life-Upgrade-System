@@ -10,7 +10,7 @@ int main(){
     TaskList list;
     TaskQueue queue;
     Stack undoStack;
-    int choice;
+    int choice = 0;
 
     do{
         cout<<"\n~~~~~ LIFE UPGRADE SYSTEM ~~~~~"<<endl;
@@ -166,7 +166,7 @@ int main(){
             case 9:
             {
                 if(queue.isEmpty()){
-                    cout<<"No schedules tasks!"<<endl;
+                    cout<<"No scheduled tasks!"<<endl;
                     break;
                 }
                 int taskId;
