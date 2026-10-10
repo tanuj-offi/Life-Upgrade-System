@@ -1,5 +1,6 @@
 #include "TaskQueue.h"
 #include <iostream>
+#include <fstream>
 using namespace std;
 
 TaskQueue::TaskQueue(){
@@ -103,4 +104,31 @@ bool TaskQueue::remove(int id){
 
 bool TaskQueue::isEmpty(){
     return front == nullptr;
+}
+
+void TaskQueue::saveToFile(string filename){
+    ofstream outFile(filename);
+    if(!outFile){
+        return;
+    }
+
+    Node* temp = front;
+    while(temp != nullptr){
+        outFile << temp->taskId << endl;
+        temp = temp->next;
+    }
+    outFile.close();
+}
+
+void TaskQueue::loadFromFile(string filename){
+    ifstream inFile(filename);
+    if(!inFile){
+        return;
+    }
+
+    int taskId;
+    while(inFile >> taskId){
+        enqueue(taskId);
+    }
+    inFile.close();
 }

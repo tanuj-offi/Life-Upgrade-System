@@ -1,5 +1,6 @@
 #include "TaskList.h"
 #include <iostream>
+#include <fstream>
 
 
 TaskList::TaskList(){
@@ -153,4 +154,44 @@ void TaskList::restoreTask(Task task){
         current = current->next;
     }
     addTask(task);
-}  
+}
+
+void TaskList::saveToFile(string filename){
+    ofstream outFile(filename);
+    if(!outFile){
+        return;
+    }
+
+    Node* current = head;
+    while(current != nullptr){
+        outFile << current->task.get_id() << " "
+                << current->task.get_xp() << " "
+                << current->task.is_completed() << " "
+                << current->task.get_name() << endl;
+        current = current->next;
+    }
+    outFile.close();
+}
+
+void TaskList::loadFromFile(string filename){
+    ifstream inFile(filename);
+    if(!inFile){
+        return;
+    }
+
+    int id, xp;
+    bool completed;
+    string name;
+
+    while(inFile >> id >> xp >> completed){
+        inFile.ignore();
+        getline(inFile, name);
+
+        Task task(id, name, xp);
+        if(completed){
+            task.markCompleted();
+        }
+        addTask(task);
+    }
+    inFile.close();
+}

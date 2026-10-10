@@ -12,6 +12,9 @@ int main(){
     Stack undoStack;
     int choice = 0;
 
+    list.loadFromFile("tasks.txt");
+    queue.loadFromFile("schedule.txt");
+
     do{
         cout<<"\n~~~~~ LIFE UPGRADE SYSTEM ~~~~~"<<endl;
         cout<<"1. Add Task"<<endl<<"2. Edit Task"<<endl<<"3. Display Task"<<endl;
@@ -273,6 +276,10 @@ int main(){
             default:
                 cout<<"Invalid Input! Try again..."<<endl;
         }
+
+        list.saveToFile("tasks.txt");
+        queue.saveToFile("schedule.txt");
+
     } while(choice != 11);
 
     return 0; 

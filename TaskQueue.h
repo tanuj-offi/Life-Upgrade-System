@@ -1,6 +1,9 @@
 #ifndef TASKQUEUE_H
 #define TASKQUEUE_H
 
+#include <string>
+using namespace std;
+
 class TaskQueue{
     private:
         struct Node{
@@ -19,6 +22,8 @@ class TaskQueue{
         bool contains(int id);
         bool remove(int id);
         bool isEmpty();
+        void saveToFile(string filename);
+        void loadFromFile(string filename);
 };
 
 #endif

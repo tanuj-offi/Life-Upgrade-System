@@ -21,6 +21,8 @@ class TaskList{
         bool getTask(int id, Task& task);
         bool containsTask(int id);
         void restoreTask(Task task);
+        void saveToFile(string filename);
+        void loadFromFile(string filename);
 };
 
 #endif 
