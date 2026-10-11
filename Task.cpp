@@ -19,6 +19,12 @@ int Task::get_xp(){
     return xp;
 }
 
+string Task::get_difficulty(){
+    if(xp <= 10) return "Easy";
+    if(xp <= 25) return "Medium";
+    return "Hard";
+}
+
 bool Task::is_completed(){
     return completed;
 }

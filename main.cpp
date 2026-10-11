@@ -3,20 +3,40 @@
 #include "TaskList.h"
 #include "TaskQueue.h"
 #include "TaskStack.h"
+#include "Player.h"
 
 using namespace std;
+
+int chooseDifficultyXP(){
+    int diffChoice;
+    cout<<"Select Task Difficulty:"<<endl;
+    cout<<"1. Easy (10 XP)"<<endl;
+    cout<<"2. Medium (25 XP)"<<endl;
+    cout<<"3. Hard (50 XP)"<<endl;
+    cout<<"Enter difficulty (1-3): ";
+    cin>>diffChoice;
+
+    if(diffChoice == 1) return 10;
+    if(diffChoice == 2) return 25;
+    if(diffChoice == 3) return 50;
+    return -1;
+}
 
 int main(){
     TaskList list;
     TaskQueue queue;
     Stack undoStack;
+    Player player;
     int choice = 0;
 
     list.loadFromFile("tasks.txt");
     queue.loadFromFile("schedule.txt");
+    player.loadFromFile("player.txt");
 
     do{
         cout<<"\n~~~~~ LIFE UPGRADE SYSTEM ~~~~~"<<endl;
+        player.displayStatus();
+        cout<<"-------------------------------"<<endl;
         cout<<"1. Add Task"<<endl<<"2. Edit Task"<<endl<<"3. Display Task"<<endl;
         cout<<"4. Delete Task"<<endl<<"5. Complete Task"<<endl<<"6. Schedule Task"<<endl;
         cout<<"7. Unschedule Task"<<endl<<"8. View Schedule"<<endl<<"9. Process Next Scheduled Task"<<endl;
@@ -31,11 +51,15 @@ int main(){
                 string name;
                 
                 cout<<"Enter task ID: "; cin>>id;
-                cout<<"Enter task name: "; cin.ignore(); getline(cin, name);
-                cout<<"Enter task XP: "; cin>>xp;
-
                 if(list.containsTask(id)){
                     cout<<"Task ID already exists!"<<endl;
+                    break;
+                }
+
+                cout<<"Enter task name: "; cin.ignore(); getline(cin, name);
+                xp = chooseDifficultyXP();
+                if(xp == -1){
+                    cout<<"Invalid difficulty choice!"<<endl;
                     break;
                 }
                 
@@ -45,7 +69,7 @@ int main(){
                 Action action{ADD_TASK, task, false};
                 undoStack.push(action);
 
-                cout<<"Task added successfully!"<<endl;
+                cout<<"Task added successfully! (+"<<xp<<" XP on completion)"<<endl;
                 break;
             }
             case 2:
@@ -62,8 +86,17 @@ int main(){
                     break;
                 }
 
+                if(oldTask.is_completed()){
+                    cout<<"Completed task cannot be edited!"<<endl;
+                    break;
+                }
+
                 cout<<"Enter new name: "; cin.ignore(); getline(cin, newName);
-                cout<<"Enter new XP: "; cin>>newXP;  
+                newXP = chooseDifficultyXP();
+                if(newXP == -1){
+                    cout<<"Invalid difficulty choice!"<<endl;
+                    break;
+                }
 
                 list.editTask(id, newName, newXP);
 
@@ -119,6 +152,7 @@ int main(){
                 bool wasScheduled = queue.contains(id);
                 list.markTaskCompleted(id);
                 queue.remove(id);
+                player.addXP(oldTask.get_xp());
 
                 Action action{COMPLETE_TASK, oldTask, wasScheduled};
                 undoStack.push(action);
@@ -183,7 +217,7 @@ int main(){
                 cout<<"Next Scheduled Task:"<<endl;
                 cout<<"ID: "<<task.get_id()<<endl;
                 cout<<"Name: "<<task.get_name()<<endl;
-                cout<<"XP: "<<task.get_xp()<<endl;
+                cout<<"Difficulty: "<<task.get_difficulty()<<" ("<<task.get_xp()<<" XP)"<<endl;
                 cout<<"Status: "<<(task.is_completed() ? "Completed":"Pending")<<endl;
 
                 int choice;
@@ -197,6 +231,7 @@ int main(){
                     {
                         queue.dequeue(taskId);
                         list.markTaskCompleted(taskId);
+                        player.addXP(task.get_xp());
 
                         Action action{COMPLETE_TASK, task, true};
                         undoStack.push(action);
@@ -257,6 +292,7 @@ int main(){
                     case COMPLETE_TASK:
                     {
                         list.restoreTask(action.task);
+                        player.removeXP(action.task.get_xp());
                         if(action.wasScheduled){
                             queue.enqueue(action.task.get_id());
                         }
@@ -279,6 +315,7 @@ int main(){
 
         list.saveToFile("tasks.txt");
         queue.saveToFile("schedule.txt");
+        player.saveToFile("player.txt");
 
     } while(choice != 11);
 

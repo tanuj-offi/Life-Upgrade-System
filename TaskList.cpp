@@ -63,10 +63,10 @@ void TaskList::displayTasks(){
     current = head;
 
     while(current != nullptr){
-        cout<<current->task.get_id()<<" "
-            <<current->task.get_name()<<" "
-            <<current->task.get_xp()<<" ";
-        cout<<(current->task.is_completed() ? "Completed" : "Pending")<<endl;
+        cout<<"ID: "<<current->task.get_id()<<" | "
+            <<current->task.get_name()<<" | "
+            <<current->task.get_difficulty()<<" ("<<current->task.get_xp()<<" XP) | "
+            <<(current->task.is_completed() ? "Completed" : "Pending")<<endl;
 
         current = current->next;
     }

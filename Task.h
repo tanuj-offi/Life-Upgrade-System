@@ -15,6 +15,7 @@ class Task{
         int get_id();
         string get_name();
         int get_xp();
+        string get_difficulty();
         bool is_completed();
         void markCompleted();
         void unmarkCompleted();
