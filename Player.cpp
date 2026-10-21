@@ -178,24 +178,42 @@ void Player::displayStatus(){
 
 void Player::saveToFile(string filename){
     ofstream outFile(filename);
-    if(!outFile){
+    if(!outFile.is_open()){
+        cerr << "Error: Could not open " << filename<< " for saving." << endl;
         return;
     }
-    outFile << totalXP << endl;
+    outFile << totalXP <<'\n';
     outFile.close();
+    if(outFile.fail()){
+        cerr << "Error: Failed to save XP to "<< filename << "." << endl;
+    }
 }
 
 void Player::loadFromFile(string filename){
     ifstream inFile(filename);
-    if(!inFile){
+    if(!inFile.is_open()){
+        cerr << "Warning: Could not open " << filename<< ". Starting with 0 XP." << endl;
         return;
     }
-    int savedXP;
-    if(inFile >> savedXP){
-        if(savedXP >= 0){
-            totalXP = savedXP;
-        }
-    }
-    inFile.close();
-}
+    long long savedXP;
 
+    if (!(inFile >> savedXP)) {
+        cerr << "Warning: Invalid XP data in "
+             << filename << ". Starting with 0 XP." << endl;
+        return;
+    }
+
+    if (savedXP < 0 ||
+        savedXP > numeric_limits<int>::max()) {
+        cerr << "Warning: XP value is outside the valid range."<< " Starting with 0 XP." << endl;
+        return;
+    }
+
+    char extra;
+    if (inFile >> extra) {
+        cerr << "Warning: Unexpected extra data in "<< filename << ". Starting with 0 XP." << endl;
+        return;
+    }
+
+    totalXP = static_cast<int>(savedXP);
+}
