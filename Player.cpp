@@ -1,4 +1,5 @@
 #include "Player.h"
+#include <limits>
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -57,6 +58,10 @@ Player::Player(){
 
 void Player::addXP(int xp){
     if(xp <= 0){
+        return;
+    }
+    if(xp > numeric_limits<int>::max() - totalXP){
+        cout<<"XP total would exceed the supported limit. "<<"No XP added."<<endl;
         return;
     }
     int oldLevel = getLevel();
