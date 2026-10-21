@@ -1,9 +1,11 @@
 #include <iostream>
+#include <limits>
 #include "Task.h"
 #include "TaskList.h"
 #include "TaskQueue.h"
 #include "TaskStack.h"
 #include "Player.h"
+
 
 using namespace std;
 
@@ -14,11 +16,16 @@ int chooseDifficultyXP(){
     cout<<"2. Medium (25 XP)"<<endl;
     cout<<"3. Hard (50 XP)"<<endl;
     cout<<"Enter difficulty (1-3): ";
-    cin>>diffChoice;
+    if(!(cin>>diffChoice)){
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        return -1;
+    }
 
     if(diffChoice == 1) return 10;
     if(diffChoice == 2) return 25;
     if(diffChoice == 3) return 50;
+
     return -1;
 }
 
@@ -42,7 +49,14 @@ int main(){
         cout<<"7. Unschedule Task"<<endl<<"8. View Schedule"<<endl<<"9. Process Next Scheduled Task"<<endl;
         cout<<"10. Undo Last Action"<<endl<<"11. Exit"<<endl;
         cout<<"Enter your choice: ";
-        cin>>choice;
+        if(!(cin>>choice)){
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout<<"Invalid input! Please enter a number."<<endl;
+            choice = 0;
+            continue;
+
+        }
 
         switch(choice){
             case 1:
@@ -211,6 +225,13 @@ int main(){
                 Task task(0,"",0);
                 if(!list.getTask(taskId, task)){
                     cout<<"Scheduled task no longer exists!"<<endl;
+                    queue.remove(taskId);
+                    break;
+                }
+                if(task.is_completed()){
+                    cout<<"This task is already completed. "
+                    <<"Removing it from the schedule; no XP awarded."
+                    <<endl;
                     queue.remove(taskId);
                     break;
                 }
