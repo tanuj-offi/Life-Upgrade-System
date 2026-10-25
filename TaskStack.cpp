@@ -41,5 +41,3 @@ bool Stack::pop(Action& action) {
 bool Stack::isEmpty() const {
     return top == nullptr;
 }
-
-}
