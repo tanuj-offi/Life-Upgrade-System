@@ -1,6 +1,7 @@
 #ifndef TASKLIST_H
 #define TASKLIST_H
 
+#include <string>
 #include "Task.h"
 
 class TaskList{
@@ -10,19 +11,25 @@ class TaskList{
             Node* next;
         };
         Node* head;
+        void clear();
     public:
         TaskList();
         ~TaskList();
-        void addTask(Task task);
+
+        // Prevent unintentional shallow copy / memory corruption
+        TaskList(const TaskList&) = delete;
+        TaskList& operator=(const TaskList&) = delete;
+
+        void addTask(const Task& task);
         void displayTasks();
         void deleteTask(int id);
         void markTaskCompleted(int id);
-        void editTask(int id, string newName, int newXP);
-        bool getTask(int id, Task& task);
-        bool containsTask(int id);
-        void restoreTask(Task task);
-        void saveToFile(string filename);
-        void loadFromFile(string filename);
+        void editTask(int id, const std::string& newName, int newXP);
+        bool getTask(int id, Task& task) const;
+        bool containsTask(int id) const;
+        void restoreTask(const Task& task);
+        void saveToFile(const std::string& filename) const;
+        void loadFromFile(const std::string& filename);
 };
 
 #endif 

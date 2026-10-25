@@ -8,13 +8,19 @@ TaskQueue::TaskQueue(){
     rear = nullptr;
 }
 
-TaskQueue::~TaskQueue(){
+void TaskQueue::clear(){
     Node* current = front;
     while(current != nullptr){
         Node* temp = current;
         current = current->next;
         delete temp;
     }
+    front = nullptr;
+    rear = nullptr;
+}
+
+TaskQueue::~TaskQueue(){
+    clear();
 }
 
 void TaskQueue::enqueue(int taskId){
@@ -46,7 +52,7 @@ bool TaskQueue::dequeue(int& removedTaskId){
     return true;
 }
  
-bool TaskQueue::peek(int& taskId){
+bool TaskQueue::peek(int& taskId) const {
     if(front == nullptr){
         return false;
     }
@@ -54,7 +60,7 @@ bool TaskQueue::peek(int& taskId){
     return true;
 }
 
-void TaskQueue::displayQueue(){
+void TaskQueue::displayQueue() const {
     if(front == nullptr){
         cout<<"Queue is empty!"<<endl;
         return;
@@ -67,7 +73,7 @@ void TaskQueue::displayQueue(){
     }
 }
 
-bool TaskQueue::contains(int id){
+bool TaskQueue::contains(int id) const {
     Node* temp = front;
     while(temp != nullptr){
         if(temp->taskId == id){
@@ -102,11 +108,11 @@ bool TaskQueue::remove(int id){
     return false;
 } 
 
-bool TaskQueue::isEmpty(){
+bool TaskQueue::isEmpty() const {
     return front == nullptr;
 }
 
-void TaskQueue::saveToFile(string filename){
+void TaskQueue::saveToFile(const string& filename) const {
     ofstream outFile(filename);
     if(!outFile){
         return;
@@ -120,11 +126,13 @@ void TaskQueue::saveToFile(string filename){
     outFile.close();
 }
 
-void TaskQueue::loadFromFile(string filename){
+void TaskQueue::loadFromFile(const string& filename){
     ifstream inFile(filename);
     if(!inFile){
         return;
     }
+
+    clear();
 
     int taskId;
     while(inFile >> taskId){

@@ -2,24 +2,23 @@
 #define TASK_H
 
 #include <string>
-using namespace std;
 
 class Task{
     private:
         int id;
-        string name;
+        std::string name;
         int xp;
         bool completed;
     public:
-        Task(int i, string n, int x);
-        int get_id();
-        string get_name();
-        int get_xp();
-        string get_difficulty();
-        bool is_completed();
+        Task(int i, const std::string& n, int x);
+        int get_id() const;
+        std::string get_name() const;
+        int get_xp() const;
+        std::string get_difficulty() const;
+        bool is_completed() const;
         void markCompleted();
         void unmarkCompleted();
-        void set_name(string newName);
+        void set_name(const std::string& newName);
         void set_xp(int newXP);
 };
 

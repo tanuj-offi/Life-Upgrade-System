@@ -2,7 +2,6 @@
 #define PLAYER_H
 
 #include <string>
-using namespace std;
 
 class Player{
     private:
@@ -11,16 +10,15 @@ class Player{
         Player();
         void addXP(int xp);
         void removeXP(int xp);
-        int getTotalXP();
-        int getLevel();
-        string getLevelTitle(int level);
-        int getLevelMinXP(int level);
-        int getProgressPercentage();
-        int getXPToNextLevel();
-        void displayStatus();
-        void saveToFile(string filename);
-        void loadFromFile(string filename);
+        int getTotalXP() const;
+        int getLevel() const;
+        std::string getLevelTitle(int level) const;
+        int getLevelMinXP(int level) const;
+        int getProgressPercentage() const;
+        int getXPToNextLevel() const;
+        void displayStatus() const;
+        void saveToFile(const std::string& filename) const;
+        void loadFromFile(const std::string& filename);
 };
 
 #endif
-

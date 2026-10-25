@@ -24,14 +24,19 @@ private:
     };
 
     Node* top;
+    void clear();
 
 public:
     Stack();
     ~Stack();
 
-    void push(Action action);
+    // Prevent unintentional shallow copy / memory corruption
+    Stack(const Stack&) = delete;
+    Stack& operator=(const Stack&) = delete;
+
+    void push(const Action& action);
     bool pop(Action& action);
-    bool isEmpty();
+    bool isEmpty() const;
 };
 
 #endif

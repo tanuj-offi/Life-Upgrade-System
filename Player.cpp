@@ -92,11 +92,11 @@ void Player::removeXP(int xp){
     }
 }
 
-int Player::getTotalXP(){
+int Player::getTotalXP() const {
     return totalXP;
 }
 
-int Player::getLevel(){
+int Player::getLevel() const {
     int currentLevel = 1;
     for(int i = 0; i < MAX_LEVEL; i++){
         if(totalXP >= LEVEL_XP[i]){
@@ -109,7 +109,7 @@ int Player::getLevel(){
     return currentLevel;
 }
 
-string Player::getLevelTitle(int level){
+string Player::getLevelTitle(int level) const {
     if(level < 1){
         level = 1;
     }
@@ -119,7 +119,7 @@ string Player::getLevelTitle(int level){
     return LEVEL_TITLES[level - 1];
 }
 
-int Player::getLevelMinXP(int level){
+int Player::getLevelMinXP(int level) const {
     if(level < 1){
         level = 1;
     }
@@ -129,7 +129,7 @@ int Player::getLevelMinXP(int level){
     return LEVEL_XP[level - 1];
 }
 
-int Player::getProgressPercentage(){
+int Player::getProgressPercentage() const {
     int level = getLevel();
     if(level >= MAX_LEVEL){
         return 100;
@@ -143,7 +143,7 @@ int Player::getProgressPercentage(){
     return ((totalXP - currentMin) * 100) / span;
 }
 
-int Player::getXPToNextLevel(){
+int Player::getXPToNextLevel() const {
     int level = getLevel();
     if(level >= MAX_LEVEL){
         return 0;
@@ -151,7 +151,7 @@ int Player::getXPToNextLevel(){
     return getLevelMinXP(level + 1) - totalXP;
 }
 
-void Player::displayStatus(){
+void Player::displayStatus() const {
     int level = getLevel();
     int progress = getProgressPercentage();
     int barWidth = 20;
@@ -176,7 +176,7 @@ void Player::displayStatus(){
     }
 }
 
-void Player::saveToFile(string filename){
+void Player::saveToFile(const string& filename) const {
     ofstream outFile(filename);
     if(!outFile.is_open()){
         cerr << "Error: Could not open " << filename<< " for saving." << endl;
@@ -189,7 +189,7 @@ void Player::saveToFile(string filename){
     }
 }
 
-void Player::loadFromFile(string filename){
+void Player::loadFromFile(const string& filename){
     ifstream inFile(filename);
     if(!inFile.is_open()){
         cerr << "Warning: Could not open " << filename<< ". Starting with 0 XP." << endl;

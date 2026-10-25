@@ -1,22 +1,27 @@
 #include "TaskList.h"
 #include <iostream>
 #include <fstream>
-
+using namespace std;
 
 TaskList::TaskList(){
     head = nullptr;
 }
 
-TaskList::~TaskList(){
+void TaskList::clear(){
     Node* current = head;
     while(current != nullptr){
         Node* temp = current;
         current = current->next;
         delete temp;
     }
+    head = nullptr;
 }
 
-void TaskList::addTask(Task task){
+TaskList::~TaskList(){
+    clear();
+}
+
+void TaskList::addTask(const Task& task){
     Node* newNode = new Node{task, nullptr};
 
     if (head == nullptr){
@@ -106,7 +111,7 @@ void TaskList::markTaskCompleted(int id){
     cout<<"Task not found!"<<endl;
 }
 
-void TaskList::editTask(int id, string newName, int newXP){
+void TaskList::editTask(int id, const string& newName, int newXP){
     Node* current = head;
     while(current != nullptr){
         if(current->task.get_id() == id){
@@ -120,7 +125,7 @@ void TaskList::editTask(int id, string newName, int newXP){
     cout<<"Task not found!"<<endl;
 }
 
-bool TaskList::getTask(int id, Task& task){
+bool TaskList::getTask(int id, Task& task) const {
     Node* current = head;
     while(current != nullptr){
         if(current->task.get_id() == id){
@@ -132,7 +137,7 @@ bool TaskList::getTask(int id, Task& task){
     return false;
 }
 
-bool TaskList::containsTask(int id){
+bool TaskList::containsTask(int id) const {
     Node* current = head;
     while(current != nullptr){
         if(current->task.get_id() == id){
@@ -143,8 +148,7 @@ bool TaskList::containsTask(int id){
     return false;
 }  
 
-
-void TaskList::restoreTask(Task task){
+void TaskList::restoreTask(const Task& task){
     Node* current = head;
     while(current != nullptr){
         if(current->task.get_id() == task.get_id()){
@@ -156,7 +160,7 @@ void TaskList::restoreTask(Task task){
     addTask(task);
 }
 
-void TaskList::saveToFile(string filename){
+void TaskList::saveToFile(const string& filename) const {
     ofstream outFile(filename);
     if(!outFile){
         return;
@@ -167,17 +171,19 @@ void TaskList::saveToFile(string filename){
         outFile << current->task.get_id() << " "
                 << current->task.get_xp() << " "
                 << current->task.is_completed() << " "
-                << current->task.get_name() << endl;
+                << current->task.get_name() << "\n";
         current = current->next;
     }
     outFile.close();
 }
 
-void TaskList::loadFromFile(string filename){
+void TaskList::loadFromFile(const string& filename){
     ifstream inFile(filename);
     if(!inFile){
         return;
     }
+
+    clear();
 
     int id, xp;
     bool completed;

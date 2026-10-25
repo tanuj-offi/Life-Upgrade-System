@@ -4,17 +4,21 @@ Stack::Stack() {
     top = nullptr;
 }
 
-Stack::~Stack() {
+void Stack::clear() {
     Node* current = top;
-
     while (current != nullptr) {
         Node* temp = current;
         current = current->next;
         delete temp;
     }
+    top = nullptr;
 }
 
-void Stack::push(Action action) {
+Stack::~Stack() {
+    clear();
+}
+
+void Stack::push(const Action& action) {
     Node* newNode = new Node{action, top};
     top = newNode;
 }
@@ -34,6 +38,8 @@ bool Stack::pop(Action& action) {
     return true;
 }
 
-bool Stack::isEmpty() {
+bool Stack::isEmpty() const {
     return top == nullptr;
+}
+
 }

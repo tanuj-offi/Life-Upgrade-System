@@ -1,13 +1,29 @@
 #include <iostream>
 #include <limits>
+#include <string>
 #include "Task.h"
 #include "TaskList.h"
 #include "TaskQueue.h"
 #include "TaskStack.h"
 #include "Player.h"
 
-
 using namespace std;
+
+// Robust helper to safely read an integer without infinite loops on bad input
+bool readInt(int& value, const string& prompt) {
+    while (true) {
+        cout << prompt;
+        if (cin >> value) {
+            return true;
+        }
+        if (cin.eof()) {
+            return false;
+        }
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input! Please enter a valid number.\n";
+    }
+}
 
 int chooseDifficultyXP(){
     int diffChoice;
@@ -15,10 +31,8 @@ int chooseDifficultyXP(){
     cout<<"1. Easy (10 XP)"<<endl;
     cout<<"2. Medium (25 XP)"<<endl;
     cout<<"3. Hard (50 XP)"<<endl;
-    cout<<"Enter difficulty (1-3): ";
-    if(!(cin>>diffChoice)){
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    
+    if(!readInt(diffChoice, "Enter difficulty (1-3): ")){
         return -1;
     }
 
@@ -48,14 +62,9 @@ int main(){
         cout<<"4. Delete Task"<<endl<<"5. Complete Task"<<endl<<"6. Schedule Task"<<endl;
         cout<<"7. Unschedule Task"<<endl<<"8. View Schedule"<<endl<<"9. Process Next Scheduled Task"<<endl;
         cout<<"10. Undo Last Action"<<endl<<"11. Exit"<<endl;
-        cout<<"Enter your choice: ";
-        if(!(cin>>choice)){
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout<<"Invalid input! Please enter a number."<<endl;
-            choice = 0;
-            continue;
-
+        
+        if(!readInt(choice, "Enter your choice: ")){
+            break;
         }
 
         switch(choice){
@@ -64,13 +73,16 @@ int main(){
                 int id, xp;
                 string name;
                 
-                cout<<"Enter task ID: "; cin>>id;
+                readInt(id, "Enter task ID: ");
                 if(list.containsTask(id)){
                     cout<<"Task ID already exists!"<<endl;
                     break;
                 }
 
-                cout<<"Enter task name: "; cin.ignore(); getline(cin, name);
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout<<"Enter task name: "; 
+                getline(cin, name);
+                
                 xp = chooseDifficultyXP();
                 if(xp == -1){
                     cout<<"Invalid difficulty choice!"<<endl;
@@ -91,7 +103,7 @@ int main(){
                 int id, newXP;
                 string newName;
 
-                cout<<"Enter task ID to edit: "; cin>>id;
+                readInt(id, "Enter task ID to edit: ");
 
                 Task oldTask(0, "", 0);
 
@@ -105,7 +117,10 @@ int main(){
                     break;
                 }
 
-                cout<<"Enter new name: "; cin.ignore(); getline(cin, newName);
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout<<"Enter new name: "; 
+                getline(cin, newName);
+
                 newXP = chooseDifficultyXP();
                 if(newXP == -1){
                     cout<<"Invalid difficulty choice!"<<endl;
@@ -128,7 +143,7 @@ int main(){
             case 4:
             {
                 int id;
-                cout<<"Enter task ID to delete: "; cin>>id;
+                readInt(id, "Enter task ID to delete: ");
 
                 Task deletedTask(0, "", 0);
 
@@ -149,7 +164,7 @@ int main(){
             case 5:
             {
                 int id;
-                cout<<"Enter task ID to mark as complete: "; cin>>id;
+                readInt(id, "Enter task ID to mark as complete: ");
 
                 Task oldTask(0, "", 0);
 
@@ -176,8 +191,7 @@ int main(){
             case 6:
             {
                 int taskId;
-                cout<<"Enter task ID to schedule: ";
-                cin>>taskId;
+                readInt(taskId, "Enter task ID to schedule: ");
                 Task task(0,"",0);
                 if(!list.getTask(taskId, task)){
                     cout<<"Task not found!"<<endl;
@@ -198,8 +212,7 @@ int main(){
             case 7:
             {
                 int taskId;
-                cout<<"Enter Task ID to unschedule: ";
-                cin>>taskId;
+                readInt(taskId, "Enter Task ID to unschedule: ");
                 if(queue.remove(taskId)){
                     cout<<"Task unscheduled!"<<endl;
                 }
@@ -241,13 +254,13 @@ int main(){
                 cout<<"Difficulty: "<<task.get_difficulty()<<" ("<<task.get_xp()<<" XP)"<<endl;
                 cout<<"Status: "<<(task.is_completed() ? "Completed":"Pending")<<endl;
 
-                int choice;
+                int actionChoice;
                 cout<<"\n1. Complete"<<endl;
                 cout<<"2. Skip for now"<<endl;
                 cout<<"3. Cancel"<<endl;
-                cout<<"Enter your choice: "; cin>>choice;
+                readInt(actionChoice, "Enter your choice: ");
                 
-                switch(choice){
+                switch(actionChoice){
                     case 1:
                     {
                         queue.dequeue(taskId);
@@ -280,7 +293,7 @@ int main(){
             }
             case 10:
             {
-                Action action{ADD_TASK, Task(0, "", 0)};
+                Action action{ADD_TASK, Task(0, "", 0), false};
 
                 if(!undoStack.pop(action)){
                     cout<<"Nothing to undo!"<<endl;

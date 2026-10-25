@@ -2,7 +2,6 @@
 #define TASKQUEUE_H
 
 #include <string>
-using namespace std;
 
 class TaskQueue{
     private:
@@ -12,18 +11,24 @@ class TaskQueue{
         };
         Node* front;
         Node* rear;
+        void clear();
     public:
         TaskQueue();
         ~TaskQueue();
+
+        // Prevent unintentional shallow copy / memory corruption
+        TaskQueue(const TaskQueue&) = delete;
+        TaskQueue& operator=(const TaskQueue&) = delete;
+
         void enqueue(int taskId);
         bool dequeue(int& removedTaskId);
-        bool peek(int& taskId);
-        void displayQueue();
-        bool contains(int id);
+        bool peek(int& taskId) const;
+        void displayQueue() const;
+        bool contains(int id) const;
         bool remove(int id);
-        bool isEmpty();
-        void saveToFile(string filename);
-        void loadFromFile(string filename);
+        bool isEmpty() const;
+        void saveToFile(const std::string& filename) const;
+        void loadFromFile(const std::string& filename);
 };
 
 #endif
