@@ -73,7 +73,9 @@ int main(){
                 int id, xp;
                 string name;
                 
-                readInt(id, "Enter task ID: ");
+                if(!readInt(id, "Enter task ID: ")){
+                    break;
+                }
                 if(list.containsTask(id)){
                     cout<<"Task ID already exists!"<<endl;
                     break;
@@ -81,7 +83,9 @@ int main(){
 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout<<"Enter task name: "; 
-                getline(cin, name);
+                if(!getline(cin, name)){
+                    break;
+                }
                 
                 xp = chooseDifficultyXP();
                 if(xp == -1){
@@ -103,7 +107,9 @@ int main(){
                 int id, newXP;
                 string newName;
 
-                readInt(id, "Enter task ID to edit: ");
+                if(!readInt(id, "Enter task ID to edit: ")){
+                    break;
+                }
 
                 Task oldTask(0, "", 0);
 
@@ -119,7 +125,9 @@ int main(){
 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout<<"Enter new name: "; 
-                getline(cin, newName);
+                if(!getline(cin, newName)){
+                    break;
+                }
 
                 newXP = chooseDifficultyXP();
                 if(newXP == -1){
@@ -143,7 +151,9 @@ int main(){
             case 4:
             {
                 int id;
-                readInt(id, "Enter task ID to delete: ");
+                if(!readInt(id, "Enter task ID to delete: ")){
+                    break;
+                }
 
                 Task deletedTask(0, "", 0);
 
@@ -164,7 +174,9 @@ int main(){
             case 5:
             {
                 int id;
-                readInt(id, "Enter task ID to mark as complete: ");
+                if(!readInt(id, "Enter task ID to mark as complete: ")){
+                    break;
+                }
 
                 Task oldTask(0, "", 0);
 
@@ -191,7 +203,9 @@ int main(){
             case 6:
             {
                 int taskId;
-                readInt(taskId, "Enter task ID to schedule: ");
+                if(!readInt(taskId, "Enter task ID to schedule: ")){
+                    break;
+                }
                 Task task(0,"",0);
                 if(!list.getTask(taskId, task)){
                     cout<<"Task not found!"<<endl;
@@ -212,7 +226,9 @@ int main(){
             case 7:
             {
                 int taskId;
-                readInt(taskId, "Enter Task ID to unschedule: ");
+                if(!readInt(taskId, "Enter Task ID to unschedule: ")){
+                    break;
+                }
                 if(queue.remove(taskId)){
                     cout<<"Task unscheduled!"<<endl;
                 }
@@ -258,7 +274,9 @@ int main(){
                 cout<<"\n1. Complete"<<endl;
                 cout<<"2. Skip for now"<<endl;
                 cout<<"3. Cancel"<<endl;
-                readInt(actionChoice, "Enter your choice: ");
+                if(!readInt(actionChoice, "Enter your choice: ")){
+                    break;
+                }
                 
                 switch(actionChoice){
                     case 1:
@@ -340,7 +358,7 @@ int main(){
             case 11:
             {
                 cout<<"Thank You!"<<endl;
-                cout<<"Exiting...";
+                cout<<"Exiting..."<<endl;
                 break;
             }
             default:
