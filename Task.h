@@ -9,8 +9,9 @@ class Task{
         std::string name;
         int xp;
         bool completed;
+        std::string due_date;
     public:
-        Task(int i, const std::string& n, int x);
+        Task(int i, const std::string& n, int x, const std::string& d = "");
         int get_id() const;
         std::string get_name() const;
         int get_xp() const;
@@ -20,6 +21,9 @@ class Task{
         void unmarkCompleted();
         void set_name(const std::string& newName);
         void set_xp(int newXP);
+        std::string get_due_date() const;
+        void set_due_date(const std::string& newDueDate);
+        bool has_due_date() const;
 };
 
 #endif

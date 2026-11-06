@@ -170,11 +170,33 @@ void TaskList::saveToFile(const string& filename) const {
     while(current != nullptr){
         outFile << current->task.get_id() << " "
                 << current->task.get_xp() << " "
-                << current->task.is_completed() << " "
-                << current->task.get_name() << "\n";
+                << current->task.is_completed() << " ";
+        if(current->task.has_due_date()){
+            outFile << "@due:" << current->task.get_due_date() << " ";
+        }
+        outFile << current->task.get_name() << "\n";
         current = current->next;
     }
     outFile.close();
+}
+
+static bool isValidISODate(const string& s){
+    if(s.length() != 10){
+        return false;
+    }
+    for(int i = 0; i < 10; ++i){
+        if(i == 4 || i == 7){
+            if(s[i] != '-'){
+                return false;
+            }
+        }
+        else{
+            if(s[i] < '0' || s[i] > '9'){
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void TaskList::loadFromFile(const string& filename){
@@ -193,7 +215,19 @@ void TaskList::loadFromFile(const string& filename){
         inFile.ignore();
         getline(inFile, name);
 
-        Task task(id, name, xp);
+        string dueDate = "";
+        if(name.rfind("@due:", 0) == 0){
+            size_t spacePos = name.find(' ');
+            if(spacePos != string::npos){
+                string candidate = name.substr(5, spacePos - 5);
+                if(isValidISODate(candidate)){
+                    dueDate = candidate;
+                    name = name.substr(spacePos + 1);
+                }
+            }
+        }
+
+        Task task(id, name, xp, dueDate);
         if(completed){
             task.markCompleted();
         }

@@ -1,11 +1,12 @@
 #include "Task.h"
 using namespace std;
 
-Task::Task(int i, const string& n, int x){
+Task::Task(int i, const string& n, int x, const string& d){
     id = i;
     name = n;
     xp = x;
     completed = false;
+    due_date = d;
 }
 
 int Task::get_id() const {
@@ -44,4 +45,16 @@ void Task::set_name(const string& newName){
 
 void Task::set_xp(int newXP){
     xp = newXP;
+}
+
+string Task::get_due_date() const {
+    return due_date;
+}
+
+void Task::set_due_date(const string& newDueDate){
+    due_date = newDueDate;
+}
+
+bool Task::has_due_date() const {
+    return !due_date.empty();
 }
