@@ -6,6 +6,7 @@
 #include <vector>
 #include "Task.h"
 #include "Player.h"
+#include "TaskQueue.h"
 
 class DatabaseManager {
 private:
@@ -47,6 +48,13 @@ public:
     bool updatePlayerXP(int userId, int newXP);
     bool getPlayer(int userId, Player& outPlayer);
     bool savePlayer(int userId, const Player& player);
+
+    // User-specific task queue operations
+    bool addToSchedule(int userId, int taskId);
+    bool getUserQueue(int userId, TaskQueue& outQueue);
+    bool processNextScheduledTask(int userId, int& outTaskId);
+    bool skipNextScheduledTask(int userId, int& outTaskId);
+    bool removeFromSchedule(int userId, int taskId);
 
     // Supporting verification methods
     int getPlayerProgressCount(int userId);

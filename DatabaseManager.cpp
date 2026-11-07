@@ -873,3 +873,831 @@ int DatabaseManager::getPlayerProgressCount(int userId) {
     mysql_stmt_close(stmt);
     return 0;
 }
+
+bool DatabaseManager::addToSchedule(int userId, int taskId) {
+    if (!isConnected()) {
+        setLastError("Database is not connected.");
+        return false;
+    }
+
+    // First verify that the task belongs to this user.
+    const char* ownershipQuery =
+        "SELECT id FROM tasks WHERE id = ? AND user_id = ?";
+
+    MYSQL_STMT* ownershipStmt = mysql_stmt_init(connection);
+
+    if (!ownershipStmt) {
+        setLastError("Failed to initialize ownership check.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            ownershipStmt,
+            ownershipQuery,
+            static_cast<unsigned long>(strlen(ownershipQuery))) != 0) {
+
+        setLastError(string("Failed to prepare ownership check: ") +
+                     mysql_stmt_error(ownershipStmt));
+        mysql_stmt_close(ownershipStmt);
+        return false;
+    }
+
+    MYSQL_BIND ownershipBind[2];
+    memset(ownershipBind, 0, sizeof(ownershipBind));
+
+    ownershipBind[0].buffer_type = MYSQL_TYPE_LONG;
+    ownershipBind[0].buffer = &taskId;
+
+    ownershipBind[1].buffer_type = MYSQL_TYPE_LONG;
+    ownershipBind[1].buffer = &userId;
+
+    if (mysql_stmt_bind_param(ownershipStmt, ownershipBind) != 0 ||
+        mysql_stmt_execute(ownershipStmt) != 0) {
+
+        setLastError(string("Failed to verify task ownership: ") +
+                     mysql_stmt_error(ownershipStmt));
+        mysql_stmt_close(ownershipStmt);
+        return false;
+    }
+
+    int foundTaskId = 0;
+
+    MYSQL_BIND ownershipResult[1];
+    memset(ownershipResult, 0, sizeof(ownershipResult));
+
+    ownershipResult[0].buffer_type = MYSQL_TYPE_LONG;
+    ownershipResult[0].buffer = &foundTaskId;
+
+    if (mysql_stmt_bind_result(ownershipStmt, ownershipResult) != 0 ||
+        mysql_stmt_store_result(ownershipStmt) != 0 ||
+        mysql_stmt_fetch(ownershipStmt) != 0) {
+
+        setLastError("Task not found or access denied.");
+        mysql_stmt_close(ownershipStmt);
+        return false;
+    }
+
+    mysql_stmt_close(ownershipStmt);
+
+    // Check whether this task is already scheduled.
+    const char* duplicateQuery =
+        "SELECT id FROM scheduled_tasks WHERE user_id = ? AND task_id = ?";
+
+    MYSQL_STMT* duplicateStmt = mysql_stmt_init(connection);
+
+    if (!duplicateStmt) {
+        setLastError("Failed to initialize schedule check.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            duplicateStmt,
+            duplicateQuery,
+            static_cast<unsigned long>(strlen(duplicateQuery))) != 0) {
+
+        setLastError(string("Failed to prepare schedule check: ") +
+                     mysql_stmt_error(duplicateStmt));
+        mysql_stmt_close(duplicateStmt);
+        return false;
+    }
+
+    MYSQL_BIND duplicateBind[2];
+    memset(duplicateBind, 0, sizeof(duplicateBind));
+
+    duplicateBind[0].buffer_type = MYSQL_TYPE_LONG;
+    duplicateBind[0].buffer = &userId;
+
+    duplicateBind[1].buffer_type = MYSQL_TYPE_LONG;
+    duplicateBind[1].buffer = &taskId;
+
+    if (mysql_stmt_bind_param(duplicateStmt, duplicateBind) != 0 ||
+        mysql_stmt_execute(duplicateStmt) != 0) {
+
+        setLastError(string("Failed to check existing schedule: ") +
+                     mysql_stmt_error(duplicateStmt));
+        mysql_stmt_close(duplicateStmt);
+        return false;
+    }
+
+    int existingScheduleId = 0;
+
+    MYSQL_BIND duplicateResult[1];
+    memset(duplicateResult, 0, sizeof(duplicateResult));
+
+    duplicateResult[0].buffer_type = MYSQL_TYPE_LONG;
+    duplicateResult[0].buffer = &existingScheduleId;
+
+    if (mysql_stmt_bind_result(duplicateStmt, duplicateResult) != 0 ||
+        mysql_stmt_store_result(duplicateStmt) != 0) {
+
+        setLastError(string("Failed to read schedule check result: ") +
+                     mysql_stmt_error(duplicateStmt));
+        mysql_stmt_close(duplicateStmt);
+        return false;
+    }
+
+    int fetchResult = mysql_stmt_fetch(duplicateStmt);
+    mysql_stmt_close(duplicateStmt);
+
+    if (fetchResult == 0) {
+        setLastError("Task is already in the schedule.");
+        return false;
+    }
+
+    // Find the next FIFO position.
+    const char* orderQuery =
+        "SELECT COALESCE(MAX(queue_order), 0) + 1 "
+        "FROM scheduled_tasks WHERE user_id = ?";
+
+    MYSQL_STMT* orderStmt = mysql_stmt_init(connection);
+
+    if (!orderStmt) {
+        setLastError("Failed to initialize queue order query.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            orderStmt,
+            orderQuery,
+            static_cast<unsigned long>(strlen(orderQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue order query: ") +
+                     mysql_stmt_error(orderStmt));
+        mysql_stmt_close(orderStmt);
+        return false;
+    }
+
+    MYSQL_BIND orderParam[1];
+    memset(orderParam, 0, sizeof(orderParam));
+
+    orderParam[0].buffer_type = MYSQL_TYPE_LONG;
+    orderParam[0].buffer = &userId;
+
+    if (mysql_stmt_bind_param(orderStmt, orderParam) != 0 ||
+        mysql_stmt_execute(orderStmt) != 0) {
+
+        setLastError(string("Failed to get queue order: ") +
+                     mysql_stmt_error(orderStmt));
+        mysql_stmt_close(orderStmt);
+        return false;
+    }
+
+    int nextOrder = 1;
+
+    MYSQL_BIND orderResult[1];
+    memset(orderResult, 0, sizeof(orderResult));
+
+    orderResult[0].buffer_type = MYSQL_TYPE_LONG;
+    orderResult[0].buffer = &nextOrder;
+
+    if (mysql_stmt_bind_result(orderStmt, orderResult) != 0 ||
+        mysql_stmt_store_result(orderStmt) != 0 ||
+        mysql_stmt_fetch(orderStmt) != 0) {
+
+        setLastError("Failed to retrieve queue order.");
+        mysql_stmt_close(orderStmt);
+        return false;
+    }
+
+    mysql_stmt_close(orderStmt);
+
+    // Add the task to the back of the queue.
+    const char* insertQuery =
+        "INSERT INTO scheduled_tasks "
+        "(user_id, task_id, queue_order) VALUES (?, ?, ?)";
+
+    MYSQL_STMT* insertStmt = mysql_stmt_init(connection);
+
+    if (!insertStmt) {
+        setLastError("Failed to initialize schedule insertion.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            insertStmt,
+            insertQuery,
+            static_cast<unsigned long>(strlen(insertQuery))) != 0) {
+
+        setLastError(string("Failed to prepare schedule insertion: ") +
+                     mysql_stmt_error(insertStmt));
+        mysql_stmt_close(insertStmt);
+        return false;
+    }
+
+    MYSQL_BIND insertBind[3];
+    memset(insertBind, 0, sizeof(insertBind));
+
+    insertBind[0].buffer_type = MYSQL_TYPE_LONG;
+    insertBind[0].buffer = &userId;
+
+    insertBind[1].buffer_type = MYSQL_TYPE_LONG;
+    insertBind[1].buffer = &taskId;
+
+    insertBind[2].buffer_type = MYSQL_TYPE_LONG;
+    insertBind[2].buffer = &nextOrder;
+
+    if (mysql_stmt_bind_param(insertStmt, insertBind) != 0 ||
+        mysql_stmt_execute(insertStmt) != 0) {
+
+        setLastError(string("Failed to add task to schedule: ") +
+                     mysql_stmt_error(insertStmt));
+        mysql_stmt_close(insertStmt);
+        return false;
+    }
+
+    mysql_stmt_close(insertStmt);
+
+    setLastError("");
+    return true;
+}
+
+
+bool DatabaseManager::getUserQueue(int userId, TaskQueue& outQueue) {
+    if (!isConnected()) {
+        setLastError("Database is not connected.");
+        return false;
+    }
+
+    // Ensure destination queue is clean before populating
+    while (!outQueue.isEmpty()) {
+        int dummy = 0;
+        outQueue.dequeue(dummy);
+    }
+
+    const char* query =
+        "SELECT task_id FROM scheduled_tasks "
+        "WHERE user_id = ? ORDER BY queue_order ASC";
+
+    MYSQL_STMT* stmt = mysql_stmt_init(connection);
+
+    if (!stmt) {
+        setLastError("Failed to initialize queue query.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            stmt,
+            query,
+            static_cast<unsigned long>(strlen(query))) != 0) {
+
+        setLastError(string("Failed to prepare queue query: ") +
+                     mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    MYSQL_BIND paramBind[1];
+    memset(paramBind, 0, sizeof(paramBind));
+
+    paramBind[0].buffer_type = MYSQL_TYPE_LONG;
+    paramBind[0].buffer = &userId;
+
+    if (mysql_stmt_bind_param(stmt, paramBind) != 0 ||
+        mysql_stmt_execute(stmt) != 0) {
+
+        setLastError(string("Failed to load queue: ") +
+                     mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    int taskId = 0;
+
+    MYSQL_BIND resultBind[1];
+    memset(resultBind, 0, sizeof(resultBind));
+
+    resultBind[0].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[0].buffer = &taskId;
+
+    if (mysql_stmt_bind_result(stmt, resultBind) != 0 ||
+        mysql_stmt_store_result(stmt) != 0) {
+
+        setLastError(string("Failed to read queue results: ") +
+                     mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return false;
+    }
+
+    while (mysql_stmt_fetch(stmt) == 0) {
+        outQueue.enqueue(taskId);
+    }
+
+    mysql_stmt_close(stmt);
+
+    setLastError("");
+    return true;
+}
+
+bool DatabaseManager::processNextScheduledTask(int userId, int& outTaskId) {
+    if (!isConnected()) {
+        setLastError("Database is not connected.");
+        return false;
+    }
+
+    // Find the task at the front of this user's FIFO queue.
+    const char* selectQuery =
+        "SELECT id, task_id FROM scheduled_tasks "
+        "WHERE user_id = ? "
+        "ORDER BY queue_order ASC LIMIT 1";
+
+    MYSQL_STMT* selectStmt = mysql_stmt_init(connection);
+
+    if (!selectStmt) {
+        setLastError("Failed to initialize queue processing query.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            selectStmt,
+            selectQuery,
+            static_cast<unsigned long>(strlen(selectQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue processing query: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    MYSQL_BIND selectBind[1];
+    memset(selectBind, 0, sizeof(selectBind));
+
+    selectBind[0].buffer_type = MYSQL_TYPE_LONG;
+    selectBind[0].buffer = &userId;
+
+    if (mysql_stmt_bind_param(selectStmt, selectBind) != 0 ||
+        mysql_stmt_execute(selectStmt) != 0) {
+
+        setLastError(string("Failed to execute queue processing query: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    int scheduleId = 0;
+    int taskId = 0;
+
+    MYSQL_BIND resultBind[2];
+    memset(resultBind, 0, sizeof(resultBind));
+
+    resultBind[0].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[0].buffer = &scheduleId;
+
+    resultBind[1].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[1].buffer = &taskId;
+
+    if (mysql_stmt_bind_result(selectStmt, resultBind) != 0 ||
+        mysql_stmt_store_result(selectStmt) != 0) {
+
+        setLastError(string("Failed to read queue processing result: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    if (mysql_stmt_fetch(selectStmt) != 0) {
+        setLastError("Schedule queue is empty.");
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    mysql_stmt_close(selectStmt);
+
+    // Remove the front item from the persistent queue.
+    const char* deleteQuery =
+        "DELETE FROM scheduled_tasks WHERE id = ? AND user_id = ?";
+
+    MYSQL_STMT* deleteStmt = mysql_stmt_init(connection);
+
+    if (!deleteStmt) {
+        setLastError("Failed to initialize queue removal.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            deleteStmt,
+            deleteQuery,
+            static_cast<unsigned long>(strlen(deleteQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue removal: ") +
+                     mysql_stmt_error(deleteStmt));
+        mysql_stmt_close(deleteStmt);
+        return false;
+    }
+
+    MYSQL_BIND deleteBind[2];
+    memset(deleteBind, 0, sizeof(deleteBind));
+
+    deleteBind[0].buffer_type = MYSQL_TYPE_LONG;
+    deleteBind[0].buffer = &scheduleId;
+
+    deleteBind[1].buffer_type = MYSQL_TYPE_LONG;
+    deleteBind[1].buffer = &userId;
+
+    if (mysql_stmt_bind_param(deleteStmt, deleteBind) != 0 ||
+        mysql_stmt_execute(deleteStmt) != 0) {
+
+        setLastError(string("Failed to remove processed task: ") +
+                     mysql_stmt_error(deleteStmt));
+        mysql_stmt_close(deleteStmt);
+        return false;
+    }
+
+    my_ulonglong affectedRows = mysql_stmt_affected_rows(deleteStmt);
+    mysql_stmt_close(deleteStmt);
+
+    if (affectedRows == 0) {
+        setLastError("Scheduled task not found or access denied.");
+        return false;
+    }
+
+    outTaskId = taskId;
+    setLastError("");
+    return true;
+}
+
+bool DatabaseManager::skipNextScheduledTask(int userId, int& outTaskId) {
+    if (!isConnected()) {
+        setLastError("Database is not connected.");
+        return false;
+    }
+
+    // Find the task currently at the front of the queue.
+    const char* selectQuery =
+        "SELECT id, task_id FROM scheduled_tasks "
+        "WHERE user_id = ? "
+        "ORDER BY queue_order ASC LIMIT 1";
+
+    MYSQL_STMT* selectStmt = mysql_stmt_init(connection);
+
+    if (!selectStmt) {
+        setLastError("Failed to initialize queue skip query.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            selectStmt,
+            selectQuery,
+            static_cast<unsigned long>(strlen(selectQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue skip query: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    MYSQL_BIND selectBind[1];
+    memset(selectBind, 0, sizeof(selectBind));
+
+    selectBind[0].buffer_type = MYSQL_TYPE_LONG;
+    selectBind[0].buffer = &userId;
+
+    if (mysql_stmt_bind_param(selectStmt, selectBind) != 0 ||
+        mysql_stmt_execute(selectStmt) != 0) {
+
+        setLastError(string("Failed to execute queue skip query: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    int scheduleId = 0;
+    int taskId = 0;
+
+    MYSQL_BIND resultBind[2];
+    memset(resultBind, 0, sizeof(resultBind));
+
+    resultBind[0].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[0].buffer = &scheduleId;
+
+    resultBind[1].buffer_type = MYSQL_TYPE_LONG;
+    resultBind[1].buffer = &taskId;
+
+    if (mysql_stmt_bind_result(selectStmt, resultBind) != 0 ||
+        mysql_stmt_store_result(selectStmt) != 0) {
+
+        setLastError(string("Failed to read queue skip result: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    if (mysql_stmt_fetch(selectStmt) != 0) {
+        setLastError("Schedule queue is empty.");
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    mysql_stmt_close(selectStmt);
+
+    // Find the last position in this user's queue.
+    const char* maxOrderQuery =
+        "SELECT COALESCE(MAX(queue_order), 0) "
+        "FROM scheduled_tasks WHERE user_id = ?";
+
+    MYSQL_STMT* maxOrderStmt = mysql_stmt_init(connection);
+
+    if (!maxOrderStmt) {
+        setLastError("Failed to initialize queue order query.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            maxOrderStmt,
+            maxOrderQuery,
+            static_cast<unsigned long>(strlen(maxOrderQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue order query: ") +
+                     mysql_stmt_error(maxOrderStmt));
+        mysql_stmt_close(maxOrderStmt);
+        return false;
+    }
+
+    MYSQL_BIND maxOrderBind[1];
+    memset(maxOrderBind, 0, sizeof(maxOrderBind));
+
+    maxOrderBind[0].buffer_type = MYSQL_TYPE_LONG;
+    maxOrderBind[0].buffer = &userId;
+
+    if (mysql_stmt_bind_param(maxOrderStmt, maxOrderBind) != 0 ||
+        mysql_stmt_execute(maxOrderStmt) != 0) {
+
+        setLastError(string("Failed to get maximum queue order: ") +
+                     mysql_stmt_error(maxOrderStmt));
+        mysql_stmt_close(maxOrderStmt);
+        return false;
+    }
+
+    int maxOrder = 0;
+
+    MYSQL_BIND maxOrderResult[1];
+    memset(maxOrderResult, 0, sizeof(maxOrderResult));
+
+    maxOrderResult[0].buffer_type = MYSQL_TYPE_LONG;
+    maxOrderResult[0].buffer = &maxOrder;
+
+    if (mysql_stmt_bind_result(maxOrderStmt, maxOrderResult) != 0 ||
+        mysql_stmt_store_result(maxOrderStmt) != 0 ||
+        mysql_stmt_fetch(maxOrderStmt) != 0) {
+
+        setLastError("Failed to retrieve maximum queue order.");
+        mysql_stmt_close(maxOrderStmt);
+        return false;
+    }
+
+    mysql_stmt_close(maxOrderStmt);
+
+    // Move the front task to the rear of the queue.
+    int newOrder = maxOrder + 1;
+
+    const char* updateQuery =
+        "UPDATE scheduled_tasks "
+        "SET queue_order = ? "
+        "WHERE id = ? AND user_id = ?";
+
+    MYSQL_STMT* updateStmt = mysql_stmt_init(connection);
+
+    if (!updateStmt) {
+        setLastError("Failed to initialize queue update.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            updateStmt,
+            updateQuery,
+            static_cast<unsigned long>(strlen(updateQuery))) != 0) {
+
+        setLastError(string("Failed to prepare queue update: ") +
+                     mysql_stmt_error(updateStmt));
+        mysql_stmt_close(updateStmt);
+        return false;
+    }
+
+    MYSQL_BIND updateBind[3];
+    memset(updateBind, 0, sizeof(updateBind));
+
+    updateBind[0].buffer_type = MYSQL_TYPE_LONG;
+    updateBind[0].buffer = &newOrder;
+
+    updateBind[1].buffer_type = MYSQL_TYPE_LONG;
+    updateBind[1].buffer = &scheduleId;
+
+    updateBind[2].buffer_type = MYSQL_TYPE_LONG;
+    updateBind[2].buffer = &userId;
+
+    if (mysql_stmt_bind_param(updateStmt, updateBind) != 0 ||
+        mysql_stmt_execute(updateStmt) != 0) {
+
+        setLastError(string("Failed to move task to back of queue: ") +
+                     mysql_stmt_error(updateStmt));
+        mysql_stmt_close(updateStmt);
+        return false;
+    }
+
+    my_ulonglong affectedRows = mysql_stmt_affected_rows(updateStmt);
+    mysql_stmt_close(updateStmt);
+
+    if (affectedRows == 0) {
+        setLastError("Scheduled task not found or access denied.");
+        return false;
+    }
+
+    outTaskId = taskId;
+    setLastError("");
+    return true;
+}
+
+bool DatabaseManager::removeFromSchedule(int userId, int taskId) {
+    if (!isConnected()) {
+        setLastError("Database is not connected.");
+        return false;
+    }
+
+    if (userId <= 0 || taskId <= 0) {
+        setLastError("Invalid user ID or task ID.");
+        return false;
+    }
+
+    // Step 1: Verify the task is in this user's schedule and retrieve its schedule ID and queue order
+    const char* selectQuery =
+        "SELECT id, queue_order FROM scheduled_tasks "
+        "WHERE user_id = ? AND task_id = ?";
+
+    MYSQL_STMT* selectStmt = mysql_stmt_init(connection);
+    if (!selectStmt) {
+        setLastError("Failed to initialize schedule lookup.");
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            selectStmt,
+            selectQuery,
+            static_cast<unsigned long>(strlen(selectQuery))) != 0) {
+        setLastError(string("Failed to prepare schedule lookup: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    MYSQL_BIND selectBind[2];
+    memset(selectBind, 0, sizeof(selectBind));
+
+    selectBind[0].buffer_type = MYSQL_TYPE_LONG;
+    selectBind[0].buffer = &userId;
+
+    selectBind[1].buffer_type = MYSQL_TYPE_LONG;
+    selectBind[1].buffer = &taskId;
+
+    if (mysql_stmt_bind_param(selectStmt, selectBind) != 0 ||
+        mysql_stmt_execute(selectStmt) != 0) {
+        setLastError(string("Failed to execute schedule lookup: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    int scheduleId = 0;
+    int removedOrder = 0;
+
+    MYSQL_BIND selectResult[2];
+    memset(selectResult, 0, sizeof(selectResult));
+
+    selectResult[0].buffer_type = MYSQL_TYPE_LONG;
+    selectResult[0].buffer = &scheduleId;
+
+    selectResult[1].buffer_type = MYSQL_TYPE_LONG;
+    selectResult[1].buffer = &removedOrder;
+
+    if (mysql_stmt_bind_result(selectStmt, selectResult) != 0 ||
+        mysql_stmt_store_result(selectStmt) != 0) {
+        setLastError(string("Failed to read schedule lookup result: ") +
+                     mysql_stmt_error(selectStmt));
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    if (mysql_stmt_fetch(selectStmt) != 0) {
+        setLastError("Scheduled task not found or access denied.");
+        mysql_stmt_close(selectStmt);
+        return false;
+    }
+
+    mysql_stmt_close(selectStmt);
+
+    // Step 2: Begin transaction for atomic removal and queue order compaction
+    if (mysql_autocommit(connection, 0) != 0) {
+        setLastError(string("Failed to begin transaction: ") + mysql_error(connection));
+        return false;
+    }
+
+    // Step 3: Delete the task from the schedule
+    const char* deleteQuery =
+        "DELETE FROM scheduled_tasks WHERE id = ? AND user_id = ?";
+
+    MYSQL_STMT* deleteStmt = mysql_stmt_init(connection);
+    if (!deleteStmt) {
+        setLastError("Failed to initialize schedule removal.");
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            deleteStmt,
+            deleteQuery,
+            static_cast<unsigned long>(strlen(deleteQuery))) != 0) {
+        setLastError(string("Failed to prepare schedule removal: ") +
+                     mysql_stmt_error(deleteStmt));
+        mysql_stmt_close(deleteStmt);
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    MYSQL_BIND deleteBind[2];
+    memset(deleteBind, 0, sizeof(deleteBind));
+
+    deleteBind[0].buffer_type = MYSQL_TYPE_LONG;
+    deleteBind[0].buffer = &scheduleId;
+
+    deleteBind[1].buffer_type = MYSQL_TYPE_LONG;
+    deleteBind[1].buffer = &userId;
+
+    if (mysql_stmt_bind_param(deleteStmt, deleteBind) != 0 ||
+        mysql_stmt_execute(deleteStmt) != 0) {
+        setLastError(string("Failed to execute schedule removal: ") +
+                     mysql_stmt_error(deleteStmt));
+        mysql_stmt_close(deleteStmt);
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    my_ulonglong affectedRows = mysql_stmt_affected_rows(deleteStmt);
+    mysql_stmt_close(deleteStmt);
+
+    if (affectedRows == 0) {
+        setLastError("Scheduled task not found or access denied.");
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    // Step 4: Decrement queue_order for subsequent items to preserve compact FIFO ordering
+    const char* updateOrderQuery =
+        "UPDATE scheduled_tasks SET queue_order = queue_order - 1 "
+        "WHERE user_id = ? AND queue_order > ?";
+
+    MYSQL_STMT* updateStmt = mysql_stmt_init(connection);
+    if (!updateStmt) {
+        setLastError("Failed to initialize queue order re-sequencing.");
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    if (mysql_stmt_prepare(
+            updateStmt,
+            updateOrderQuery,
+            static_cast<unsigned long>(strlen(updateOrderQuery))) != 0) {
+        setLastError(string("Failed to prepare queue order re-sequencing: ") +
+                     mysql_stmt_error(updateStmt));
+        mysql_stmt_close(updateStmt);
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    MYSQL_BIND updateBind[2];
+    memset(updateBind, 0, sizeof(updateBind));
+
+    updateBind[0].buffer_type = MYSQL_TYPE_LONG;
+    updateBind[0].buffer = &userId;
+
+    updateBind[1].buffer_type = MYSQL_TYPE_LONG;
+    updateBind[1].buffer = &removedOrder;
+
+    if (mysql_stmt_bind_param(updateStmt, updateBind) != 0 ||
+        mysql_stmt_execute(updateStmt) != 0) {
+        setLastError(string("Failed to update queue order: ") +
+                     mysql_stmt_error(updateStmt));
+        mysql_stmt_close(updateStmt);
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    mysql_stmt_close(updateStmt);
+
+    // Step 5: Commit transaction
+    if (mysql_commit(connection) != 0) {
+        setLastError(string("Failed to commit schedule removal: ") +
+                     mysql_error(connection));
+        mysql_rollback(connection);
+        mysql_autocommit(connection, 1);
+        return false;
+    }
+
+    mysql_autocommit(connection, 1);
+    setLastError("");
+    return true;
+}
