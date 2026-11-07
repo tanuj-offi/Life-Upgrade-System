@@ -3,6 +3,9 @@
 
 #include <mysql.h>
 #include <string>
+#include <vector>
+#include "Task.h"
+#include "Player.h"
 
 class DatabaseManager {
 private:
@@ -28,10 +31,24 @@ public:
 
     // User registration & player progress initialization
     bool registerUser(const std::string& username, const std::string& password, int* outUserId = nullptr);
+    bool userExists(const std::string& username);
+
+    // User-specific task operations
+    bool createTask(int userId, const Task& task, int* outTaskId = nullptr);
+    bool createTask(int userId, const std::string& name, int xp, const std::string& dueDate = "", bool completed = false, int* outTaskId = nullptr);
+    bool getUserTasks(int userId, std::vector<Task>& outTasks);
+    bool updateTask(int userId, int taskId, const std::string& newName, int newXP, const std::string& newDueDate = "");
+    bool updateTask(int userId, const Task& task);
+    bool deleteTask(int userId, int taskId);
+    bool setTaskCompleted(int userId, int taskId, bool completed);
+
+    // Player XP operations
+    bool getPlayerXP(int userId, int& outXP);
+    bool updatePlayerXP(int userId, int newXP);
+    bool getPlayer(int userId, Player& outPlayer);
+    bool savePlayer(int userId, const Player& player);
 
     // Supporting verification methods
-    bool userExists(const std::string& username);
-    bool getPlayerXP(int userId, int& outXP);
     int getPlayerProgressCount(int userId);
 };
 
