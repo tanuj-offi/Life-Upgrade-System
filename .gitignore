@@ -1,2 +1,7 @@
 *.exe
 *.txt
+db_config.h
+db_test.cpp
+db_test.exe
+mysql_test.cpp
+mysql_test.exe
