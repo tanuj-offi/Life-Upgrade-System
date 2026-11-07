@@ -1,67 +1,270 @@
 # Life Upgrade System
 
-## 1. Project Title and Brief Description
+A gamified task management and habit productivity system developed as a Semester 3 B.Tech Computer Science and Engineering (CSE) Project-Based Learning (PBL) project.
 
-**Life Upgrade System** is a C++ console-based task management and gamified productivity system developed as a Semester 3 BTech CSE Project-Based Learning (PBL) project.
+The system gamifies productivity by rewarding users with Experience Points (XP) upon completing tasks, featuring level progression across 20 ranks, task scheduling via a FIFO queue, action undo history via a LIFO stack, persistent relational storage with MySQL, and an interactive, real-time synchronized web application.
 
-The system gamifies daily task tracking by rewarding the user with Experience Points (XP) upon completing tasks, featuring real-time level progression, rank titles, undo capability via stack, task scheduling via queue, and persistent file storage.
+---
 
-## 2. Problem Statement / Objective
-
-Managing daily tasks manually makes it challenging to maintain consistency and track productivity over time. The objective of this project is to provide an interactive, gamified task management system where completing tasks directly contributes to character growth through XP and levels.
-
-The system demonstrates practical implementation of core Data Structures (Singly Linked List, FIFO Queue, LIFO Stack) combined with Object-Oriented Programming (OOP) principles, clean memory management, and file persistence.
-
-## 3. Team Members
+## Team & Academic Information
 
 | Name | Enrollment No. | Section |
 | :--- | :--- | :--- |
-| Bilawal Ansari | 2027723 | J |
-| Kartikey Vashisht | 2028739 | ML3 |
-| Tanuj Sharma | 2028217 | B |
+| **Bilawal Ansari** | 2027723 | J |
+| **Kartikey Vashisht** | 2028739 | ML3 |
+| **Tanuj Sharma** | 2028217 | B |
 
-**Mentor:** Ms. Nishtha Bhatt
+- **Academic Context:** Semester 3 B.Tech CSE — Project-Based Learning (PBL)
+- **Course Focus:** Data Structures and Algorithms & Full-Stack Application Design
+- **Mentor:** Ms. Nishtha Bhatt
 
-## 4. Technologies / Tools Used
+---
 
-- **Language:** C++ (C++17)
-- **Data Structures & Concepts:**
-  - Singly Linked List (Dynamic Task Management)
-  - Queue (FIFO Task Scheduling)
-  - Stack (LIFO Undo Management)
-  - Object-Oriented Programming (OOP, Encapsulation, Const-correctness)
-  - Safe Memory Management (Destructors, Rule of Three protection)
-  - File Streams (Persistence across sessions)
-- **IDE:** Visual Studio Code
-- **Compiler:** GCC / G++
-- **Version Control:** Git and GitHub
+## Current Project Status (Phase 3)
 
-## 5. Project Setup / Installation
+The project has successfully reached **Phase 3**:
+- **Phase 1 & 2:** Delivered the complete C++ core engine featuring custom data structures (singly linked list, queue, stack), terminal menu interface, and file persistence.
+- **Phase 3:** Introduced a modern, multi-user web application powered by Python (Flask), HTML5, CSS3, and JavaScript, backed by a persistent MySQL relational database. The C++ application has been extended with a dedicated C++ MySQL database manager (`DatabaseManager`), allowing both the CLI and web application to interface with the same underlying database schema while leaving the original CLI functionality fully operational and backwards compatible.
 
-### Requirements
+---
 
-- C++ compiler with C++17 support (`g++`)
-- Visual Studio Code or any terminal/IDE
-- Git
+## Key Features
 
-### Build Instructions
+- **Multi-User Authentication & Isolation:** Secure user registration, login, and session-based logout using salted SHA-256 password hashing. Every user's tasks, schedule queue, and player progress are strictly isolated by `user_id`.
+- **Task Management (CRUD):** Create, view, edit, and delete tasks with custom names, optional deadlines (`YYYY-MM-DD`), and predefined difficulty tiers:
+  - **Easy:** +10 XP
+  - **Medium:** +25 XP
+  - **Hard:** +50 XP
+- **Task Completion & Reversible Undo:** Marking a task complete awards XP and updates character rank. Undoing a completed task safely deducts the earned XP, restores pending status, and returns the task to active lists.
+- **Gamified Level Progression:** Real-time XP tracking across 20 distinct level tiers, complete with rank titles ranging from *Beginner* (Level 1) to *Life Upgrade Legend* (Level 20), an animated progression bar, and a celebratory level-up modal.
+- **Queue-Based Task Scheduling:** Schedule tasks to prioritize your daily workflow. Tasks enter a First-In-First-Out (FIFO) queue with options to complete and earn XP ("Process Next"), skip to the end of the queue, or remove from the schedule.
+- **Interactive Web Dashboard:** Central hub featuring a player progress card, real-time statistics (total, completed, pending), upcoming deadline tracking, and a schedule preview.
+- **Real-Time UI Synchronization:** Instant client-side state synchronization without requiring page refreshes when completing tasks, undoing actions, adding to schedule, or removing from schedule.
+- **Dual Persistence Architecture:**
+  - **Relational Database:** MySQL multi-user tables for web and database-backed workflows.
+  - **Flat Files:** Text-based persistence (`tasks.txt`, `schedule.txt`, `player.txt`) ensuring the C++ CLI runs self-contained without mandatory server dependencies.
+- **Responsive Theme:** Sleek, accessible user interface adhering to a high-contrast *Midnight Black* (`#0a0a0a`), *Pure White*, and *Lime Green* (`#a3e635`) design system, featuring a responsive sidebar for desktop and an adaptive mobile drawer.
 
-1. Clone or download the repository.
-2. Open terminal in the project directory:
+---
 
-```bash
-cd Life-Upgrade-System
+## Technology Stack
+
+| Layer | Technologies | Purpose |
+| :--- | :--- | :--- |
+| **C++ Core Engine** | C++ (C++17), GCC / G++ | Custom data structures, memory management, CLI menu, MySQL C API integration |
+| **Backend & API** | Python 3.8+, Flask 3.x, `mysql-connector-python` | RESTful JSON API, session authentication, business logic validation |
+| **Database** | MySQL Server 8.x | Relational multi-user data storage, foreign key constraints, cascading cleanup |
+| **Frontend UI** | HTML5, CSS3, JavaScript (ES6+ Fetch API) | Single-Page Application (SPA) shell, responsive layouts, real-time state synchronization |
+| **Tooling & Dev** | Git, GitHub, Visual Studio Code, Batch Scripts | Version control, cross-platform builds, automated server startup |
+
+---
+
+## Data Structures in the C++ Application
+
+The C++ core implements custom, pointer-based data structures without relying on third-party containers, illustrating direct memory management and object-oriented principles:
+
+1. **Singly Linked List (`TaskList`)**
+   - **Internal Representation:** Dynamic chain of heap-allocated `Node` structures (`Node* head`), where each node encapsulates a `Task` object and a `next` pointer.
+   - **Usage:** Stores and manages the active task catalog.
+   - **Operations:** Insertion at the tail ($O(n)$), search by ID ($O(n)$), deletion by ID ($O(n)$), and state updates.
+   - **In-Place Selection Sort:** When displaying tasks (`TaskList::displayTasks`), the linked list performs an in-place Selection Sort to display tasks in ascending ID order without allocating secondary arrays.
+   - **Memory Safety:** Custom destructor traverses and deallocates every node. Copy constructor and assignment operator are explicitly deleted (`= delete`) to avoid shallow copies and double-free vulnerabilities.
+
+2. **FIFO Queue (`TaskQueue`)**
+   - **Internal Representation:** Linked list with two boundary pointers (`Node* front` and `Node* rear`).
+   - **Usage:** Drives the task scheduling pipeline in chronological order.
+   - **Operations:** $O(1)$ `enqueue` at the rear, $O(1)$ `dequeue` and `peek` from the front, alongside arbitrary removal ($O(n)$) when a scheduled task is deleted or completed early.
+
+3. **LIFO Stack (`Stack` in `TaskStack.h`)**
+   - **Internal Representation:** Linked list with a top-of-stack pointer (`Node* top`).
+   - **Usage:** Tracks historical operations for undo capability.
+   - **Operations:** $O(1)$ `push` and `pop` of an `Action` struct containing:
+     - `ActionType` (`ADD_TASK`, `DELETE_TASK`, `EDIT_TASK`, `COMPLETE_TASK`)
+     - `Task` snapshot
+     - `wasScheduled` boolean flag
+   - **Reversibility:** Reverting a completed task restores its pending status, deducts the awarded XP from the `Player`, and re-enqueues the task ID if it was previously scheduled.
+
+4. **Player Gamification Model (`Player`)**
+   - Manages player progression through a pre-calculated 20-tier lookup array (`LEVEL_XP` and `LEVEL_TITLES`).
+   - Calculates progress percentage and remaining XP to next level, safeguarding against integer overflow.
+
+---
+
+## Project Architecture
+
+```
+                      ┌────────────────────────────────────────┐
+                      │              User Clients              │
+                      └──────────────────┬─────────────────────┘
+                                         │
+                 ┌───────────────────────┴───────────────────────┐
+                 │                                               │
+                 ▼                                               ▼
+     ┌───────────────────────┐                       ┌───────────────────────┐
+     │      Web Browser      │                       │     Terminal / CLI    │
+     │   (HTML / CSS / JS)   │                       │  (Interactive Menu)   │
+     └───────────┬───────────┘                       └───────────┬───────────┘
+                 │ HTTP / JSON                                   │ Direct C++
+                 ▼                                               ▼
+     ┌───────────────────────┐                       ┌───────────────────────┐
+     │    Flask Web API      │                       │   C++ Data Structures │
+     │     (web/app.py)      │                       │ (List, Queue, Stack)  │
+     └───────────┬───────────┘                       └───────────┬───────────┘
+                 │                                               │
+                 │ mysql-connector-python        DatabaseManager │ MySQL C API /
+                 │                               (C++ Database)  │ File Streams
+                 ▼                                               ▼
+     ┌───────────────────────────────────────────────────────────────────────┐
+     │                         Shared Storage Layer                          │
+     │                                                                       │
+     │   MySQL Database (life_upgrade_db)         Text Files (CLI Fallback)  │
+     │   ├── users                                ├── tasks.txt              │
+     │   ├── tasks                                ├── schedule.txt           │
+     │   ├── scheduled_tasks                      └── player.txt             │
+     │   └── player_progress                                                 │
+     └───────────────────────────────────────────────────────────────────────┘
 ```
 
-3. Compile all source files:
+Both the C++ application (via `DatabaseManager`) and the Flask web service connect to the **same** MySQL database (`life_upgrade_db`):
+- Both use identical salted SHA-256 password hashes (`salt:sha256(salt + password)`).
+- Both enforce the same XP rules (Easy = 10, Medium = 25, Hard = 50) and 20-level hierarchy.
+- Foreign key constraints ensure tasks and player progress cascade cleanly upon user deletion.
+
+---
+
+## Directory Structure
+
+```text
+Life-Upgrade-System/
+├── DatabaseManager.h      # C++ MySQL database manager header
+├── DatabaseManager.cpp    # C++ MySQL database manager implementation
+├── Task.h                 # Task entity header (with optional due date)
+├── Task.cpp               # Task entity implementation
+├── TaskList.h             # Singly linked list header for task catalog
+├── TaskList.cpp           # Singly linked list implementation & selection sort
+├── TaskQueue.h            # FIFO queue header for task scheduling
+├── TaskQueue.cpp          # FIFO queue implementation
+├── TaskStack.h            # LIFO stack header for undo history
+├── TaskStack.cpp          # LIFO stack implementation
+├── Player.h               # Player progression & level system header
+├── Player.cpp             # Player XP logic & 20-tier level hierarchy
+├── main.cpp               # C++ CLI interactive menu entry point
+├── README.md              # Project documentation
+├── .gitignore             # Version control exclusion rules
+└── web/                   # Phase 3 Web Application
+    ├── app.py             # Flask API server & route controllers
+    ├── start_server.bat   # Windows one-click web server startup script
+    ├── static/            # Static assets
+    │   ├── app.js         # Frontend SPA controller & real-time sync
+    │   └── style.css      # Custom Midnight Black + Lime styling
+    └── templates/         # HTML templates
+        └── index.html     # Single-page application HTML shell
+```
+
+---
+
+## Installation & Setup Instructions
+
+### 1. Prerequisites
+
+- **C++ Compiler:** GCC / G++ with C++17 support (e.g. MinGW-w64 on Windows, `build-essential` on Linux)
+- **Python:** Version 3.8 or higher
+- **MySQL Server:** Version 8.x running locally on port 3306
+- **Git:** For cloning and version control
+
+---
+
+### 2. MySQL Database Setup
+
+1. Log into your local MySQL instance:
+   ```bash
+   mysql -u root -p
+   ```
+
+2. Create the project database:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS life_upgrade_db;
+   USE life_upgrade_db;
+   ```
+
+3. Initialize the database schema:
+   ```sql
+   CREATE TABLE IF NOT EXISTS users (
+       id INT AUTO_INCREMENT PRIMARY KEY,
+       username VARCHAR(50) NOT NULL UNIQUE,
+       password_hash VARCHAR(255) NOT NULL,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
+
+   CREATE TABLE IF NOT EXISTS player_progress (
+       user_id INT PRIMARY KEY,
+       total_xp INT NOT NULL DEFAULT 0,
+       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+   );
+
+   CREATE TABLE IF NOT EXISTS tasks (
+       id INT AUTO_INCREMENT PRIMARY KEY,
+       user_id INT NOT NULL,
+       name VARCHAR(255) NOT NULL,
+       xp INT NOT NULL DEFAULT 10,
+       completed TINYINT(1) NOT NULL DEFAULT 0,
+       due_date DATE NULL,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+       CONSTRAINT chk_task_xp CHECK (xp IN (10, 25, 50))
+   );
+
+   CREATE TABLE IF NOT EXISTS scheduled_tasks (
+       id INT AUTO_INCREMENT PRIMARY KEY,
+       user_id INT NOT NULL,
+       task_id INT NOT NULL,
+       queue_order INT NOT NULL,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+       UNIQUE KEY uq_user_task (user_id, task_id)
+   );
+   ```
+
+---
+
+### 3. Database Credentials Configuration
+
+To keep sensitive credentials secure and out of version control, credentials are maintained locally:
+
+1. Create a `db_config.h` file in the root repository directory (this file is excluded by `.gitignore`):
+   ```c
+   #ifndef DB_CONFIG_H
+   #define DB_CONFIG_H
+
+   #define DB_HOST "localhost"
+   #define DB_USER "root"
+   #define DB_PASS "YourMySQLPassword"
+   #define DB_NAME "life_upgrade_db"
+   #define DB_PORT 3306
+
+   #endif
+   ```
+
+2. **Automatic Detection:** The Python web server (`web/app.py`) automatically parses `db_config.h` if present, ensuring both the C++ and Python layers share the exact same configuration without duplicating passwords in tracked source files.
+3. **Environment Override (Optional):** You can also override credentials via environment variables:
+   - `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT`
+
+---
+
+### 4. Build and Run the C++ CLI Application
+
+To compile the standalone C++ CLI:
 
 ```bash
+# From the project root
 g++ -std=c++17 -Wall -Wextra main.cpp Task.cpp TaskList.cpp TaskQueue.cpp TaskStack.cpp Player.cpp -o LifeUpgradeSystem
 ```
 
-4. Run the executable:
+Run the compiled executable:
 
-**Windows:**
+**Windows (PowerShell / Command Prompt):**
 ```powershell
 .\LifeUpgradeSystem.exe
 ```
@@ -71,137 +274,87 @@ g++ -std=c++17 -Wall -Wextra main.cpp Task.cpp TaskList.cpp TaskQueue.cpp TaskSt
 ./LifeUpgradeSystem
 ```
 
-## 6. Features & System Modules
+---
 
-### 1. Task Management (`Task` & `TaskList`)
-- **Add Task:** Create tasks with unique IDs, names, and predefined difficulty levels:
-  - Easy: +10 XP
-  - Medium: +25 XP
-  - Hard: +50 XP
-- **Edit Task:** Update name and difficulty/XP of pending tasks.
-- **Display Tasks:** View tasks sorted by ID with difficulty, XP, and completion status.
-- **Delete Task:** Remove tasks while automatically cleaning up scheduled queues.
-- **Mark Complete:** Mark tasks done and credit XP to the player.
+### 5. Install Python Dependencies for the Web Application
 
-### 2. Task Scheduling Queue (`TaskQueue`)
-- **FIFO Queue:** Schedule pending tasks to execute in chronological order.
-- **Interactive Processor (Menu Option 9):**
-  - Complete the next scheduled task and receive XP.
-  - Skip and move the task to the back of the queue.
-  - Cancel/leave it in place.
-- **Unschedule:** Remove scheduled tasks directly by ID.
+Install the required Python packages:
 
-### 3. Undo Stack (`TaskStack`)
-- **LIFO Stack Action History:** Tracks operations including `ADD_TASK`, `DELETE_TASK`, `EDIT_TASK`, and `COMPLETE_TASK`.
-- **Full State Reversion:** Undoing a completed task deducts rewarded XP, reverts task completion status, and restores queue scheduling status.
-
-### 4. Player Gamification & Level Progression (`Player`)
-- **XP Progression:** Dynamic XP accumulation up to 20 levels.
-- **Rank Titles:** Unlocks titles from *Beginner* (Level 1) up to *Life Upgrade Legend* (Level 20).
-- **Status Dashboard:** Visual ASCII progress bar, percentage to next level, and XP needed.
-- **Safe Overflow Protection:** Guards against integer overflow on high XP values.
-
-### 5. Persistent Storage
-- Automatically saves and restores data across sessions:
-  - `tasks.txt`: Task catalog, completion states, and XP values.
-  - `schedule.txt`: Current order of scheduled task IDs.
-  - `player.txt`: Current player total XP.
-
-### 6. Robust Error & Input Handling
-- Built-in stream sanitation preventing infinite loops or crashes from non-numeric input.
-- Safeguards preventing duplicate IDs or editing already-completed tasks.
-
-## 7. Project Structure
-
-```text
-Life-Upgrade-System/
-+-- Task.h            # Task entity class header
-+-- Task.cpp          # Task implementation
-+-- TaskList.h        # Linked list header for task management
-+-- TaskList.cpp      # Linked list implementation & selection sort display
-+-- TaskQueue.h       # Queue header for task scheduling
-+-- TaskQueue.cpp     # Linked list-based FIFO queue implementation
-+-- TaskStack.h       # Stack header for undo operations
-+-- TaskStack.cpp     # Linked list-based LIFO stack implementation
-+-- Player.h          # Player progression and level system header
-+-- Player.cpp        # Player XP calculation and level dashboard
-+-- main.cpp          # CLI menu interface and controller loop
-+-- tasks.txt         # Saved task database
-+-- schedule.txt      # Saved task schedule queue
-+-- player.txt        # Saved player XP file
-+-- README.md         # Project documentation
-+-- .gitignore        # Git ignore rules
+```bash
+pip install flask mysql-connector-python
 ```
 
-## 8. Phase 3 — Web Application (Multi-User)
+---
 
-Phase 3 adds a fully functional web frontend and MySQL-backed multi-user system on top of the existing C++ CLI project. The original CLI remains unchanged.
+## How to Run the Web Application
 
-### Architecture
-
-```
-Browser (HTML/CSS/JS)
-        │  HTTP (JSON)
-        ▼
- Flask (Python 3) — web/app.py
-        │  mysql-connector-python
-        ▼
-  MySQL — life_upgrade_db
-  (users, tasks, scheduled_tasks, player_progress)
+### Method 1: Windows One-Click Script (Recommended)
+Double-click `web\start_server.bat` or execute it from the terminal:
+```cmd
+web\start_server.bat
 ```
 
-The same data-structure logic (Linked List, Queue, Stack) now runs server-side in Python, mirroring the C++ classes. The existing C++ CLI and its file-based persistence remain fully independent.
-
-### Database Schema
-
-| Table | Key columns |
-|---|---|
-| `users` | `id`, `username`, `password_hash` |
-| `tasks` | `id`, `user_id`, `name`, `xp`, `due_date`, `completed` |
-| `scheduled_tasks` | `id`, `user_id`, `task_id`, `queue_order` |
-| `player_progress` | `user_id`, `total_xp` |
-
-### Web Setup Requirements
-
-- Python 3.8+
-- Flask 3.x: `pip install flask`
-- MySQL connector: `pip install mysql-connector-python`
-- MySQL Server 8.x with `life_upgrade_db` database created
-- Database credentials in `web/app.py` or via environment variables:
-  - `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`
-
-### Running the Web Server
-
-```powershell
+### Method 2: Manual Terminal Execution
+```bash
 cd web
 python app.py
 ```
 
-Then open **http://127.0.0.1:5000** in your browser.
+Once running, open your web browser and navigate to:
+```
+http://127.0.0.1:5000
+```
 
-Alternatively, double-click **`web\start_server.bat`** on Windows.
+---
 
-### Web Features
+## Usage Overview & User Flow
 
-- **Register / Login / Logout** — session-based authentication with salted SHA-256 passwords
-- **Dashboard** — player card (XP, level, title, progress bar), upcoming tasks, schedule preview
-- **My Tasks** — create, edit, delete, complete, undo completion; filter by All / Pending / Completed
-- **Schedule** — add tasks to a FIFO queue, process (complete + earn XP) or skip the next task, remove from queue
-- **XP & Level System** — 20 levels from Beginner to Life Upgrade Legend; level-up overlay animation
-- **Responsive** — desktop sidebar + mobile hamburger menu; Midnight Black + Lime Green theme
+```
+   [Register / Login]
+           │
+           ▼
+   [Create New Task] ──────► Select Difficulty: Easy (10 XP), Medium (25 XP), Hard (50 XP)
+           │                 Optional Due Date (YYYY-MM-DD)
+           ▼
+   ┌─────────────────────────────────────────────────────────────┐
+   │                     Task Action Options                     │
+   ├──────────────────────────────┬──────────────────────────────┤
+   │                              │                              │
+   ▼                              ▼                              ▼
+[Add to Schedule]          [Mark Complete]                  [Edit / Delete]
+Ordered into FIFO Queue    Awards XP to Character           Update metadata or
+Process Next / Skip        Moves to Completed Section       permanently delete
+           │                              │
+           │                              ▼
+           │                     [Undo Completion]
+           │                     Reverts completion status
+           │                     Deducts awarded XP
+           ▼                              │
+┌─────────────────────────────────────────┴──────────────────────┐
+│                    Progression & Level Up                      │
+│  Accumulate total XP to progress across 20 tiers from Beginner  │
+│  to Life Upgrade Legend with animated rank celebrations.       │
+└────────────────────────────────────────────────────────────────┘
+```
 
-### DatabaseManager (C++)
+1. **Sign In:** Create a new user account or log into an existing account.
+2. **Dashboard Overview:** Review your current level, total XP, progress bar toward your next title, summary statistics, and urgent tasks.
+3. **Manage Tasks:** Head to **My Tasks** to create tasks. Filter views by *All*, *Pending*, or *Completed*. In the *All* view, tasks are neatly partitioned into active and completed groupings.
+4. **Complete & Undo:** Check off tasks to earn XP and celebrate level-ups. If completed by mistake, clicking **Undo** immediately deducts the XP and restores the task.
+5. **Work with the Schedule:** Click **Add to Schedule** on any pending task to enqueue it. Visit the **Schedule** page to process the top task in work order or skip it for later.
 
-`DatabaseManager.h` / `DatabaseManager.cpp` provide the C++ MySQL integration layer used for database-layer tests. These are not used by the web server (which uses Python directly) but are part of the codebase for reference and future C++ API work.
+---
 
-Credentials are stored in `db_config.h` (excluded from version control via `.gitignore`).
+## Planned Future Enhancements
 
-## 9. Planned Future Enhancements
+The following ideas are proposed for subsequent academic project phases:
+- **Priority Queue Scheduling:** Automatically reorder scheduled tasks based on deadline urgency rather than insertion order alone.
+- **Productivity Streaks & Multipliers:** Streak multipliers rewarding consecutive days of completed tasks.
+- **Report & Analytics Export:** Export weekly productivity metrics and task history to CSV or PDF summaries.
+- **Interactive Calendar View:** Month and week calendar views displaying scheduled and deadline tasks.
 
-- Priority queue scheduling based on task urgency/deadline.
-- Daily streaks and bonus reward multipliers.
-- Exporting task reports.
+---
 
-## 10. Contribution
+## License
 
-All team members contribute through the GitHub repository with regular commits following modular development practices.
+This project was developed for educational and academic assessment purposes as part of the B.Tech CSE Curriculum.
