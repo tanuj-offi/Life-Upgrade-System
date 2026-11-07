@@ -133,13 +133,75 @@ Life-Upgrade-System/
 +-- .gitignore        # Git ignore rules
 ```
 
-## 8. Planned Future Enhancements
+## 8. Phase 3 — Web Application (Multi-User)
 
-- Multi-user profiles and authentication.
+Phase 3 adds a fully functional web frontend and MySQL-backed multi-user system on top of the existing C++ CLI project. The original CLI remains unchanged.
+
+### Architecture
+
+```
+Browser (HTML/CSS/JS)
+        │  HTTP (JSON)
+        ▼
+ Flask (Python 3) — web/app.py
+        │  mysql-connector-python
+        ▼
+  MySQL — life_upgrade_db
+  (users, tasks, scheduled_tasks, player_progress)
+```
+
+The same data-structure logic (Linked List, Queue, Stack) now runs server-side in Python, mirroring the C++ classes. The existing C++ CLI and its file-based persistence remain fully independent.
+
+### Database Schema
+
+| Table | Key columns |
+|---|---|
+| `users` | `id`, `username`, `password_hash` |
+| `tasks` | `id`, `user_id`, `name`, `xp`, `due_date`, `completed` |
+| `scheduled_tasks` | `id`, `user_id`, `task_id`, `queue_order` |
+| `player_progress` | `user_id`, `total_xp` |
+
+### Web Setup Requirements
+
+- Python 3.8+
+- Flask 3.x: `pip install flask`
+- MySQL connector: `pip install mysql-connector-python`
+- MySQL Server 8.x with `life_upgrade_db` database created
+- Database credentials in `web/app.py` or via environment variables:
+  - `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`
+
+### Running the Web Server
+
+```powershell
+cd web
+python app.py
+```
+
+Then open **http://127.0.0.1:5000** in your browser.
+
+Alternatively, double-click **`web\start_server.bat`** on Windows.
+
+### Web Features
+
+- **Register / Login / Logout** — session-based authentication with salted SHA-256 passwords
+- **Dashboard** — player card (XP, level, title, progress bar), upcoming tasks, schedule preview
+- **My Tasks** — create, edit, delete, complete, undo completion; filter by All / Pending / Completed
+- **Schedule** — add tasks to a FIFO queue, process (complete + earn XP) or skip the next task, remove from queue
+- **XP & Level System** — 20 levels from Beginner to Life Upgrade Legend; level-up overlay animation
+- **Responsive** — desktop sidebar + mobile hamburger menu; Midnight Black + Lime Green theme
+
+### DatabaseManager (C++)
+
+`DatabaseManager.h` / `DatabaseManager.cpp` provide the C++ MySQL integration layer used for database-layer tests. These are not used by the web server (which uses Python directly) but are part of the codebase for reference and future C++ API work.
+
+Credentials are stored in `db_config.h` (excluded from version control via `.gitignore`).
+
+## 9. Planned Future Enhancements
+
 - Priority queue scheduling based on task urgency/deadline.
 - Daily streaks and bonus reward multipliers.
-- Exporting task reports / GUI frontend.
+- Exporting task reports.
 
-## 9. Contribution
+## 10. Contribution
 
 All team members contribute through the GitHub repository with regular commits following modular development practices.

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Life Upgrade System</title>
+<link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<!-- ===== AUTH SCREENS ===== -->
+<div id="auth-screen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-icon">⚡</span>
+      <h1>Life Upgrade<br/><span class="lime">System</span></h1>
+    </div>
+
+    <!-- Tab buttons -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="showAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-register" onclick="showAuthTab('register')">Register</button>
+    </div>
+
+    <!-- Login form -->
+    <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" required/>
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" required/>
+      </div>
+      <div id="login-error" class="form-error hidden"></div>
+      <button type="submit" class="btn-primary btn-full" id="login-btn">Sign In</button>
+    </form>
+
+    <!-- Register form -->
+    <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+      <div class="field-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="Choose a username (3–50 chars)" autocomplete="username" required/>
+      </div>
+      <div class="field-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="At least 6 characters" autocomplete="new-password" required/>
+      </div>
+      <div id="register-error" class="form-error hidden"></div>
+      <button type="submit" class="btn-primary btn-full" id="register-btn">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app" class="app-layout hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="logo-icon">⚡</span>
+      <span class="sidebar-brand">Life Upgrade</span>
+      <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close menu">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a class="nav-item" data-page="tasks" onclick="navigate('tasks')">
+        <span class="nav-icon">✅</span> My Tasks
+      </a>
+      <a class="nav-item" data-page="schedule" onclick="navigate('schedule')">
+        <span class="nav-icon">📋</span> Schedule
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" id="sidebar-user"></div>
+      <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- Top bar (mobile) -->
+    <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div class="topbar-player" id="topbar-player"></div>
+    </header>
+
+    <!-- Pages -->
+    <div id="page-dashboard" class="page hidden"></div>
+    <div id="page-tasks"     class="page hidden"></div>
+    <div id="page-schedule"  class="page hidden"></div>
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Task modal (create / edit) -->
+<div id="task-modal" class="modal-backdrop hidden" onclick="closeTaskModalOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="task-modal-title">New Task</h2>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+    <form id="task-form" onsubmit="handleTaskSave(event)">
+      <div class="field-group">
+        <label>Task name *</label>
+        <input type="text" id="task-name" placeholder="What needs to be done?" maxlength="255" required/>
+      </div>
+      <div class="field-group">
+        <label>Difficulty &amp; XP</label>
+        <div class="difficulty-row">
+          <label class="diff-option">
+            <input type="radio" name="task-xp" value="10" id="diff-easy" checked/>
+            <span class="diff-badge easy">Easy — 10 XP</span>
+          </label>
+          <label class="diff-option">
+            <input type="radio" name="task-xp" value="25" id="diff-medium"/>
+            <span class="diff-badge medium">Medium — 25 XP</span>
+          </label>
+          <label class="diff-option">
+            <input type="radio" name="task-xp" value="50" id="diff-hard"/>
+            <span class="diff-badge hard">Hard — 50 XP</span>
+          </label>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Due date <span class="label-hint">(optional)</span></label>
+        <input type="date" id="task-due"/>
+      </div>
+      <div id="task-form-error" class="form-error hidden"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="closeTaskModal()">Cancel</button>
+        <button type="submit" class="btn-primary" id="task-save-btn">Save Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirm-modal" class="modal-backdrop hidden" onclick="closeConfirmOnBackdrop(event)">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="confirm-title">Confirm</h2>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
+    </div>
+    <p id="confirm-message" class="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="confirm-ok-btn" onclick="confirmOk()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Level-up overlay -->
+<div id="levelup-overlay" class="levelup-overlay hidden">
+  <div class="levelup-card">
+    <div class="levelup-sparks" id="levelup-sparks"></div>
+    <div class="levelup-icon">⚡</div>
+    <div class="levelup-label">LEVEL UP!</div>
+    <div class="levelup-level" id="levelup-level"></div>
+    <div class="levelup-title" id="levelup-title"></div>
+    <button class="btn-primary" onclick="closeLevelUp()">Keep Going!</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

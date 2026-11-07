@@ -5,3 +5,14 @@ db_test.cpp
 db_test.exe
 mysql_test.cpp
 mysql_test.exe
+
+# Web layer — Python cache and test artifacts
+web/__pycache__/
+web/*.pyc
+web/e2e_test.py
+web/test_flow.py
+web/instance/
+
+# Local environment / secrets
+.env
+web/.env
