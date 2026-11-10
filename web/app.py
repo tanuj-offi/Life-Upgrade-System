@@ -184,6 +184,23 @@ def _task_row_to_dict(row, is_scheduled=False) -> dict:
     }
 
 
+def _recompact_user_schedule(cur, uid):
+    """Re-sequence the user's scheduled tasks to 1..N in queue_order ASC without unique collisions."""
+    cur.execute(
+        "SELECT id, queue_order FROM scheduled_tasks WHERE user_id = %s ORDER BY queue_order ASC",
+        (uid,),
+    )
+    rows = cur.fetchall()
+    if any(order != i for i, (_, order) in enumerate(rows, 1)):
+        cur.execute("UPDATE scheduled_tasks SET queue_order = -id WHERE user_id = %s", (uid,))
+        for i, (sid, _) in enumerate(rows, 1):
+            cur.execute(
+                "UPDATE scheduled_tasks SET queue_order = %s WHERE id = %s AND user_id = %s",
+                (i, sid, uid),
+            )
+
+
+
 # ---------------------------------------------------------------------------
 # Session authentication decorator
 # ---------------------------------------------------------------------------
@@ -486,6 +503,7 @@ def delete_task(task_id):
             "DELETE FROM scheduled_tasks WHERE task_id = %s AND user_id = %s",
             (task_id, uid),
         )
+        _recompact_user_schedule(cur, uid)
         cur.execute("DELETE FROM tasks WHERE id = %s AND user_id = %s", (task_id, uid))
         db.commit()
         cur.close(); db.close()
@@ -528,6 +546,7 @@ def complete_task(task_id):
             "DELETE FROM scheduled_tasks WHERE task_id = %s AND user_id = %s",
             (task_id, uid),
         )
+        _recompact_user_schedule(cur, uid)
 
         # Award XP and return old/new level for level-up detection
         cur.execute(
@@ -695,6 +714,9 @@ def add_to_schedule():
             cur.close(); db.close()
             return jsonify({"error": "Task is already in the schedule"}), 409
 
+        # Ensure existing schedule is compact before appending
+        _recompact_user_schedule(cur, uid)
+
         # Next queue order
         cur.execute(
             "SELECT COALESCE(MAX(queue_order), 0) + 1 FROM scheduled_tasks WHERE user_id = %s",
@@ -741,11 +763,7 @@ def remove_from_schedule(task_id):
             "DELETE FROM scheduled_tasks WHERE id = %s AND user_id = %s",
             (schedule_id, uid),
         )
-        cur.execute(
-            "UPDATE scheduled_tasks SET queue_order = queue_order - 1 "
-            "WHERE user_id = %s AND queue_order > %s",
-            (uid, removed_order),
-        )
+        _recompact_user_schedule(cur, uid)
         db.commit()
         cur.close(); db.close()
         return jsonify({
@@ -785,6 +803,7 @@ def process_next():
         if not t or t[1]:
             # Already completed — just remove from schedule
             cur.execute("DELETE FROM scheduled_tasks WHERE id = %s", (sched_id,))
+            _recompact_user_schedule(cur, uid)
             db.commit(); cur.close(); db.close()
             return jsonify({"error": "Task is already completed"}), 409
 
@@ -796,12 +815,8 @@ def process_next():
         # Remove from schedule
         cur.execute("DELETE FROM scheduled_tasks WHERE id = %s AND user_id = %s", (sched_id, uid))
 
-        # Re-compact
-        cur.execute(
-            "UPDATE scheduled_tasks SET queue_order = queue_order - 1 "
-            "WHERE user_id = %s AND queue_order > 1",
-            (uid,),
-        )
+        # Re-compact remaining schedule to 1..N
+        _recompact_user_schedule(cur, uid)
 
         # Award XP
         cur.execute("SELECT total_xp FROM player_progress WHERE user_id = %s", (uid,))
@@ -842,30 +857,41 @@ def skip_next():
         cur = db.cursor()
         db.start_transaction()
 
-        # Front
+        _recompact_user_schedule(cur, uid)
+
+        # Fetch all scheduled tasks ordered by queue_order ASC
         cur.execute(
             "SELECT st.id, st.task_id FROM scheduled_tasks st "
-            "WHERE st.user_id = %s ORDER BY st.queue_order ASC LIMIT 1",
+            "WHERE st.user_id = %s ORDER BY st.queue_order ASC",
             (uid,),
         )
-        row = cur.fetchone()
-        if not row:
+        rows = cur.fetchall()
+        if not rows:
             db.rollback(); cur.close(); db.close()
             return jsonify({"error": "Schedule is empty"}), 404
 
-        sched_id, task_id = row
+        front_id, task_id = rows[0]
 
-        # Max order
-        cur.execute(
-            "SELECT COALESCE(MAX(queue_order), 0) FROM scheduled_tasks WHERE user_id = %s",
-            (uid,),
-        )
-        max_order = cur.fetchone()[0]
+        if len(rows) > 1:
+            cur.execute(
+                "UPDATE scheduled_tasks SET queue_order = 0 WHERE id = %s AND user_id = %s",
+                (front_id, uid),
+            )
+            for new_order, (sid, _) in enumerate(rows[1:], 1):
+                cur.execute(
+                    "UPDATE scheduled_tasks SET queue_order = %s WHERE id = %s AND user_id = %s",
+                    (new_order, sid, uid),
+                )
+            cur.execute(
+                "UPDATE scheduled_tasks SET queue_order = %s WHERE id = %s AND user_id = %s",
+                (len(rows), front_id, uid),
+            )
+        else:
+            cur.execute(
+                "UPDATE scheduled_tasks SET queue_order = 1 WHERE id = %s AND user_id = %s",
+                (front_id, uid),
+            )
 
-        cur.execute(
-            "UPDATE scheduled_tasks SET queue_order = %s WHERE id = %s AND user_id = %s",
-            (max_order + 1, sched_id, uid),
-        )
         db.commit()
         cur.close(); db.close()
         return jsonify({"message": "Task moved to end of schedule", "taskId": task_id})
