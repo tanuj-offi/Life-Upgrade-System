@@ -349,6 +349,43 @@ def get_player():
         return jsonify({"error": "Failed to load player data"}), 500
 
 
+@app.route("/api/levels", methods=["GET"])
+@login_required
+def get_levels():
+    """Return all 20 levels with requirement, current user level, and unlocked status."""
+    uid = session["user_id"]
+    try:
+        db  = get_db()
+        cur = db.cursor()
+        cur.execute("SELECT total_xp FROM player_progress WHERE user_id = %s", (uid,))
+        row = cur.fetchone()
+        cur.close()
+        db.close()
+        total_xp = row[0] if row else 0
+        cur_level = compute_level(total_xp)
+
+        levels = []
+        for i in range(MAX_LEVEL):
+            lvl_num = i + 1
+            req_xp = LEVEL_XP[i]
+            levels.append({
+                "level":      lvl_num,
+                "title":      LEVEL_TITLES[i],
+                "xpRequired": req_xp,
+                "unlocked":   lvl_num <= cur_level,
+                "isCurrent":  lvl_num == cur_level,
+            })
+
+        return jsonify({
+            "currentLevel": cur_level,
+            "totalXP":      total_xp,
+            "player":       player_data(total_xp),
+            "levels":       levels,
+        })
+    except MySQLError:
+        return jsonify({"error": "Failed to load levels"}), 500
+
+
 # ---------------------------------------------------------------------------
 # Task routes
 # ---------------------------------------------------------------------------
@@ -982,6 +1019,8 @@ def dashboard():
 @app.route("/dashboard")
 @app.route("/tasks")
 @app.route("/schedule")
+@app.route("/levels")
+@app.route("/achievements")
 def index():
     return render_template("index.html")
 
